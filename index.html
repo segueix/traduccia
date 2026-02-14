@@ -731,7 +731,147 @@
     container.appendChild(list);
     document.getElementById('epubSection').style.display = '';
   }
-  function generarEPUB() { showStatus('Funció pendent d\'implementar (Prompt 4)', 'error'); }
+  function generarEPUB() {
+    if (state.revisions.length === 0) {
+      showStatus('No hi ha capítols revisats per generar l\'EPUB.', 'error');
+      return;
+    }
+    
+    var zip = new JSZip();
+    var titolLlibre = 'Traduccia — Revisió';
+    
+    // 1. mimetype (OBLIGATÒRIAMENT sense compressió i com a primer fitxer)
+    zip.file('mimetype', 'application/epub+zip', {compression: 'STORE'});
+    
+    // 2. META-INF/container.xml
+    zip.file('META-INF/container.xml', [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">',
+      '  <rootfiles>',
+      '    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>',
+      '  </rootfiles>',
+      '</container>'
+    ].join('\n'));
+    
+    // 3. Estil CSS per l'EPUB
+    var css = [
+      'body { font-family: Georgia, "Times New Roman", serif; line-height: 1.6; margin: 1em; color: #1a1a1a; }',
+      'h1 { font-size: 1.5em; margin: 1em 0 0.5em; page-break-before: always; }',
+      'h1:first-child { page-break-before: avoid; }',
+      'p { margin: 0.4em 0; text-indent: 1.5em; text-align: justify; }',
+      'nav ol { list-style-type: decimal; padding-left: 1.5em; }',
+      'nav li { margin: 0.3em 0; }',
+      'nav a { text-decoration: none; color: #2563eb; }'
+    ].join('\n');
+    zip.file('OEBPS/style.css', css);
+    
+    // 4. Generar capítols XHTML
+    var manifestItems = '';
+    var spineItems = '';
+    
+    // Afegir CSS al manifest
+    manifestItems += '    <item id="css" href="style.css" media-type="text/css"/>\n';
+    
+    // Afegir TOC
+    manifestItems += '    <item id="toc" href="toc.xhtml" media-type="application/xhtml+xml" properties="nav"/>\n';
+    spineItems += '    <itemref idref="toc"/>\n';
+    
+    state.revisions.forEach(function(rev, i) {
+      var id = 'cap' + i;
+      manifestItems += '    <item id="' + id + '" href="' + id + '.xhtml" media-type="application/xhtml+xml"/>\n';
+      spineItems += '    <itemref idref="' + id + '"/>\n';
+      
+      // Convertir el text en paràgrafs XHTML
+      var paras = rev.contingut
+        .split('\n')
+        .filter(function(l) { return l.trim(); })
+        .map(function(l) { return '<p>' + escapeXml(l) + '</p>'; })
+        .join('\n');
+      
+      var chapterXhtml = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<!DOCTYPE html>',
+        '<html xmlns="http://www.w3.org/1999/xhtml">',
+        '<head>',
+        '  <title>' + escapeXml(rev.titol) + '</title>',
+        '  <link rel="stylesheet" href="style.css"/>',
+        '</head>',
+        '<body>',
+        '  <h1>' + escapeXml(rev.titol) + '</h1>',
+        '  ' + paras,
+        '</body>',
+        '</html>'
+      ].join('\n');
+      
+      zip.file('OEBPS/' + id + '.xhtml', chapterXhtml);
+    });
+    
+    // 5. content.opf (manifest + spine + metadata)
+    var now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+    var contentOpf = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">',
+      '  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">',
+      '    <dc:identifier id="uid">traduccia-' + Date.now() + '</dc:identifier>',
+      '    <dc:title>' + escapeXml(titolLlibre) + '</dc:title>',
+      '    <dc:language>ca</dc:language>',
+      '    <meta property="dcterms:modified">' + now + '</meta>',
+      '  </metadata>',
+      '  <manifest>',
+      manifestItems,
+      '  </manifest>',
+      '  <spine>',
+      spineItems,
+      '  </spine>',
+      '</package>'
+    ].join('\n');
+    
+    zip.file('OEBPS/content.opf', contentOpf);
+    
+    // 6. TOC (nav XHTML)
+    var tocItems = state.revisions.map(function(rev, i) {
+      return '      <li><a href="cap' + i + '.xhtml">' + escapeXml(rev.titol) + '</a></li>';
+    }).join('\n');
+    
+    var tocXhtml = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<!DOCTYPE html>',
+      '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">',
+      '<head>',
+      '  <title>Índex</title>',
+      '  <link rel="stylesheet" href="style.css"/>',
+      '</head>',
+      '<body>',
+      '  <nav epub:type="toc">',
+      '    <h1>Índex</h1>',
+      '    <ol>',
+      tocItems,
+      '    </ol>',
+      '  </nav>',
+      '</body>',
+      '</html>'
+    ].join('\n');
+    
+    zip.file('OEBPS/toc.xhtml', tocXhtml);
+    
+    // 7. Generar i descarregar
+    showStatus('Generant EPUB...', 'success');
+    
+    zip.generateAsync({
+      type: 'blob',
+      mimeType: 'application/epub+zip',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 9 }
+    })
+    .then(function(blob) {
+      var filename = 'traduccia_revisio_' + new Date().toISOString().slice(0,10) + '.epub';
+      saveAs(blob, filename);
+      showStatus('EPUB generat i descarregat: ' + filename, 'success');
+    })
+    .catch(function(err) {
+      showStatus('Error generant EPUB: ' + err.message, 'error');
+    });
+  }
 </script>
 
 </body>
