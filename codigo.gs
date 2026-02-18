@@ -1,25 +1,58 @@
 // ============================================================
 //  NOVEL·LA IA — codigo.gs
-//  Requereix: Script Properties → ANTHROPIC_API_KEY
 // ============================================================
 
-const API_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL   = 'claude-opus-4-6';
+const PROVIDER_DEFAULTS = {
+  anthropic: {
+    apiUrl: 'https://api.anthropic.com/v1/messages',
+    model: 'claude-opus-4-1'
+  },
+  openai: {
+    apiUrl: 'https://api.openai.com/v1/chat/completions',
+    model: 'gpt-4o'
+  },
+  gemini: {
+    apiUrlBase: 'https://generativelanguage.googleapis.com/v1beta/models',
+    model: 'gemini-1.5-pro'
+  }
+};
 
 function doGet() {
-  return HtmlService.createHtmlOutputFromFile('info')
+  return HtmlService.createHtmlOutputFromFile('index')
     .setTitle('Novel·la IA — Creador de contes')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-// ─── Crida genèrica a l'API d'Anthropic ───────────────────
-function callClaude(messages, systemPrompt, maxTokens) {
-  const key = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY');
-  if (!key) throw new Error('Falta la clau ANTHROPIC_API_KEY a les Script Properties.');
+// ─── Crida genèrica a LLM ──────────────────────────────────
+function callLLM(messages, systemPrompt, config) {
+  const safeConfig = config || {};
+  const provider = String(safeConfig.provider || '').toLowerCase().trim();
+  const apiKey = safeConfig.apiKey;
+  const model = safeConfig.model;
+  const maxTokens = safeConfig.maxTokens || 2048;
 
+  if (!provider) throw new Error('Falta el provider al config.');
+  if (!apiKey) throw new Error('Falta l\'apiKey al config.');
+
+  if (provider === 'anthropic') {
+    return callAnthropic(messages, systemPrompt, apiKey, model, maxTokens);
+  }
+
+  if (provider === 'openai') {
+    return callOpenAI(messages, systemPrompt, apiKey, model, maxTokens);
+  }
+
+  if (provider === 'gemini' || provider === 'google' || provider === 'google-gemini') {
+    return callGemini(messages, systemPrompt, apiKey, model, maxTokens);
+  }
+
+  throw new Error('Provider no suportat: ' + provider);
+}
+
+function callAnthropic(messages, systemPrompt, apiKey, model, maxTokens) {
   const payload = {
-    model: MODEL,
-    max_tokens: maxTokens || 2048,
+    model: model || PROVIDER_DEFAULTS.anthropic.model,
+    max_tokens: maxTokens,
     system: systemPrompt || SYSTEM_DEFAULT,
     messages: messages
   };
@@ -28,25 +61,159 @@ function callClaude(messages, systemPrompt, maxTokens) {
     method: 'post',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': key,
+      'x-api-key': apiKey,
       'anthropic-version': '2023-06-01'
     },
     payload: JSON.stringify(payload),
     muteHttpExceptions: true
   };
 
-  const raw      = UrlFetchApp.fetch(API_URL, options);
-  const result   = JSON.parse(raw.getContentText());
-  if (result.error) throw new Error(result.error.message);
-  return result.content[0].text;
+  const raw = UrlFetchApp.fetch(PROVIDER_DEFAULTS.anthropic.apiUrl, options);
+  const result = parseJsonResponse(raw, 'Anthropic');
+  if (result.error) throw new Error(result.error.message || 'Error desconegut d\'Anthropic.');
+
+  const text = Array.isArray(result.content)
+    ? result.content
+        .filter(part => part && part.type === 'text')
+        .map(part => part.text || '')
+        .join('\n')
+    : '';
+
+  return normalizeLLMText(text);
 }
 
-const SYSTEM_DEFAULT = `Ets un escriptor expert en narrativa catalana i castellana. 
-Segueixes escrupolosament el format demanat en cada prompt. 
+function callOpenAI(messages, systemPrompt, apiKey, model, maxTokens) {
+  const payload = {
+    model: model || PROVIDER_DEFAULTS.openai.model,
+    messages: buildOpenAIMessages(messages, systemPrompt),
+    max_tokens: maxTokens
+  };
+
+  const options = {
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + apiKey
+    },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  const raw = UrlFetchApp.fetch(PROVIDER_DEFAULTS.openai.apiUrl, options);
+  const result = parseJsonResponse(raw, 'OpenAI');
+  if (result.error) throw new Error(result.error.message || 'Error desconegut d\'OpenAI.');
+
+  const firstChoice = result.choices && result.choices[0];
+  const messageContent = firstChoice && firstChoice.message ? firstChoice.message.content : '';
+  const text = extractContentText(messageContent);
+
+  return normalizeLLMText(text);
+}
+
+function callGemini(messages, systemPrompt, apiKey, model, maxTokens) {
+  const finalModel = model || PROVIDER_DEFAULTS.gemini.model;
+  const endpoint = PROVIDER_DEFAULTS.gemini.apiUrlBase + '/' + encodeURIComponent(finalModel) + ':generateContent?key=' + encodeURIComponent(apiKey);
+
+  const payload = {
+    contents: buildGeminiContents(messages),
+    generationConfig: {
+      maxOutputTokens: maxTokens
+    }
+  };
+
+  if (systemPrompt || SYSTEM_DEFAULT) {
+    payload.systemInstruction = {
+      parts: [{ text: systemPrompt || SYSTEM_DEFAULT }]
+    };
+  }
+
+  const options = {
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  const raw = UrlFetchApp.fetch(endpoint, options);
+  const result = parseJsonResponse(raw, 'Gemini');
+  if (result.error) {
+    throw new Error((result.error.message || 'Error desconegut de Gemini.') + (result.error.status ? ' (' + result.error.status + ')' : ''));
+  }
+
+  const firstCandidate = result.candidates && result.candidates[0];
+  const parts = firstCandidate && firstCandidate.content ? firstCandidate.content.parts : [];
+  const text = Array.isArray(parts)
+    ? parts.map(part => (part && part.text) ? part.text : '').join('\n')
+    : '';
+
+  return normalizeLLMText(text);
+}
+
+function buildOpenAIMessages(messages, systemPrompt) {
+  const base = [];
+  if (systemPrompt || SYSTEM_DEFAULT) {
+    base.push({ role: 'system', content: systemPrompt || SYSTEM_DEFAULT });
+  }
+
+  return base.concat((messages || []).map(msg => ({
+    role: msg.role,
+    content: extractContentText(msg.content)
+  })));
+}
+
+function buildGeminiContents(messages) {
+  return (messages || []).map(msg => ({
+    role: msg.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: extractContentText(msg.content) }]
+  }));
+}
+
+function extractContentText(content) {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content.map(item => {
+      if (typeof item === 'string') return item;
+      if (item && typeof item.text === 'string') return item.text;
+      return '';
+    }).join('\n');
+  }
+  if (content && typeof content.text === 'string') return content.text;
+  return content ? String(content) : '';
+}
+
+function normalizeLLMText(text) {
+  return (text || '').replace(/^\s+|\s+$/g, '');
+}
+
+function parseJsonResponse(rawResponse, providerName) {
+  const statusCode = rawResponse.getResponseCode();
+  const rawText = rawResponse.getContentText() || '';
+
+  let parsed;
+  try {
+    parsed = JSON.parse(rawText);
+  } catch (e) {
+    throw new Error(providerName + ' ha retornat una resposta no JSON. Codi HTTP: ' + statusCode + '. Resposta: ' + rawText.slice(0, 500));
+  }
+
+  if (statusCode >= 400) {
+    const message = parsed && parsed.error
+      ? (parsed.error.message || JSON.stringify(parsed.error))
+      : rawText.slice(0, 500);
+    throw new Error(providerName + ' error HTTP ' + statusCode + ': ' + message);
+  }
+
+  return parsed;
+}
+
+const SYSTEM_DEFAULT = `Ets un escriptor expert en narrativa catalana i castellana.
+Segueixes escrupolosament el format demanat en cada prompt.
 Respons SEMPRE en català, amb riquesa lingüística i coherència narrativa total respecte al context acumulat.`;
 
 // ─── FASE 1: Genera 10 premisses ──────────────────────────
-function fase1_premisses(tematica, history) {
+function fase1_premisses(tematica, history, userConfig) {
   history = history || [];
   const userMsg = {
     role: 'user',
@@ -65,14 +232,14 @@ Format ESTRICTE (res més, sense introduccions):
 10. [premissa]`
   };
 
-  const msgs     = [...history, userMsg];
-  const response = callClaude(msgs);
+  const msgs = [...history, userMsg];
+  const response = callLLM(msgs, SYSTEM_DEFAULT, userConfig);
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
 }
 
 // ─── FASE 2: 2 opcions d'estructura narrativa ─────────────
-function fase2_estructura(premissaTriada, history) {
+function fase2_estructura(premissaTriada, history, userConfig) {
   const msgs = [
     ...history,
     { role: 'user', content: `He triat la premissa: "${premissaTriada}"` },
@@ -96,13 +263,13 @@ Acte 3 — Resolució: [resum 2 línies]
 Moment fosc del protagonista: [1 línia]` }
   ];
 
-  const response   = callClaude(msgs);
+  const response = callLLM(msgs, SYSTEM_DEFAULT, userConfig);
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
 }
 
 // ─── FASE 3: 2 opcions de personatges ────────────────────
-function fase3_personatges(estructuraTriada, history) {
+function fase3_personatges(estructuraTriada, history, userConfig) {
   const msgs = [
     ...history,
     { role: 'user', content: `He triat l'estructura: "${estructuraTriada}"` },
@@ -126,13 +293,13 @@ SECUNDARI 2: [nom — funció narrativa — relació amb el protagonista]
 [mateixa estructura, personatges completament diferents]` }
   ];
 
-  const response   = callClaude(msgs, SYSTEM_DEFAULT, 2500);
+  const response = callLLM(msgs, SYSTEM_DEFAULT, Object.assign({}, userConfig, { maxTokens: 2500 }));
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
 }
 
 // ─── FASE 4: 2 opcions de món i ambientació ───────────────
-function fase4_mon(personatgesTriats, history) {
+function fase4_mon(personatgesTriats, history, userConfig) {
   const msgs = [
     ...history,
     { role: 'user', content: `He triat els personatges: "${personatgesTriats}"` },
@@ -151,13 +318,13 @@ Simbolisme del món (1 línia):
 [mateixa estructura, ambientació completament diferent]` }
   ];
 
-  const response   = callClaude(msgs, SYSTEM_DEFAULT, 2000);
+  const response = callLLM(msgs, SYSTEM_DEFAULT, Object.assign({}, userConfig, { maxTokens: 2000 }));
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
 }
 
 // ─── FASE 5: Taula de capítols (1 sola opció) ─────────────
-function fase5_capitols(monTriat, history) {
+function fase5_capitols(monTriat, history, userConfig) {
   const msgs = [
     ...history,
     { role: 'user', content: `He triat el món i ambientació: "${monTriat}"` },
@@ -173,13 +340,13 @@ Ganxo final: [1 línia]
 ---` }
   ];
 
-  const response   = callClaude(msgs, SYSTEM_DEFAULT, 3000);
+  const response = callLLM(msgs, SYSTEM_DEFAULT, Object.assign({}, userConfig, { maxTokens: 3000 }));
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
 }
 
 // ─── FASE 6+: Escriptura de cada capítol (1 sola opció) ───
-function fase6_escriureCapitol(numCapitol, titolCapitol, totalCapitols, history) {
+function fase6_escriureCapitol(numCapitol, titolCapitol, totalCapitols, history, userConfig) {
   const msgs = [
     ...history,
     { role: 'user', content: `Escriu el **Capítol ${numCapitol}: ${titolCapitol}** complet.
@@ -196,7 +363,7 @@ ${numCapitol < totalCapitols ? '- Final que crea expectativa cap al capítol seg
 Escriu directament el capítol, sense cap introducció prèvia.` }
   ];
 
-  const response   = callClaude(msgs, SYSTEM_DEFAULT, 4000);
+  const response = callLLM(msgs, SYSTEM_DEFAULT, Object.assign({}, userConfig, { maxTokens: 4000 }));
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
 }
@@ -219,17 +386,17 @@ function parseCapitols(text) {
   return blocks.map(block => {
     const titolMatch = block.match(/\*\*Capítol\s+(\d+):\s*(.+?)\*\*/i);
     return {
-      num:   titolMatch ? parseInt(titolMatch[1]) : null,
-      titol: titolMatch ? titolMatch[2].trim()   : 'Capítol',
-      text:  block
+      num: titolMatch ? parseInt(titolMatch[1]) : null,
+      titol: titolMatch ? titolMatch[2].trim() : 'Capítol',
+      text: block
     };
   }).filter(c => c.num !== null);
 }
 
 // ─── Funció d'exportació a Google Doc ─────────────────────
 function exportarADoc(titol, contingut) {
-  const doc    = DocumentApp.create(titol || 'Novel·la IA');
-  const body   = doc.getBody();
+  const doc = DocumentApp.create(titol || 'Novel·la IA');
+  const body = doc.getBody();
   body.clear();
   body.appendParagraph(titol || 'Novel·la IA')
       .setHeading(DocumentApp.ParagraphHeading.TITLE);

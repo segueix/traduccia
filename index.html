@@ -118,6 +118,27 @@
   }
   select:focus { outline: none; border-color: var(--accent); }
 
+  input[type=text],
+  input[type=password] {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: .95rem;
+    font-family: var(--font);
+  }
+  input[type=text]:focus,
+  input[type=password]:focus { outline: none; border-color: var(--accent); }
+
+  .field-label {
+    display: block;
+    font-size: .85rem;
+    color: var(--text2);
+    margin: 14px 0 8px;
+  }
+
   /* ── Botons ── */
   .btn {
     display: inline-flex;
@@ -382,6 +403,21 @@
 <!-- FASE 0: Selecció de temàtica -->
 <div class="card" id="fase-0">
   <h2><span class="icon">🎭</span> Tria la temàtica</h2>
+
+  <label class="field-label" for="sel-provider">Proveïdor LLM</label>
+  <select id="sel-provider">
+    <option value="anthropic">Anthropic (Claude)</option>
+    <option value="openai">OpenAI (ChatGPT)</option>
+    <option value="gemini">Google Gemini</option>
+  </select>
+
+  <label class="field-label" for="inp-model">Model</label>
+  <input type="text" id="inp-model" value="claude-opus-4-1" placeholder="Ex: claude-opus-4-1 / gpt-4o / gemini-1.5-pro">
+
+  <label class="field-label" for="inp-apikey">API Key</label>
+  <input type="password" id="inp-apikey" placeholder="Introdueix la teva clau API (no es desa)">
+
+  <label class="field-label" for="sel-tematica">Gènere literari</label>
   <select id="sel-tematica">
     <option value="">— Selecciona un gènere —</option>
     <option value="novel·la d'aventures">Novel·la d'aventures</option>
@@ -526,8 +562,18 @@ const ESTAT = {
   monTriat:       '',
   capitols:       [],      // [{num, titol, text}]
   capitalActual:  0,
-  novellaTextos:  []       // textos dels capítols escrits
+  novellaTextos:  [],      // textos dels capítols escrits
+  userConfig:     null
 };
+
+
+document.getElementById('sel-provider').addEventListener('change', e => {
+  const v = e.target.value;
+  const inpModel = document.getElementById('inp-model');
+  if (v === 'anthropic') inpModel.value = 'claude-opus-4-1';
+  if (v === 'openai') inpModel.value = 'gpt-4o';
+  if (v === 'gemini') inpModel.value = 'gemini-1.5-pro';
+});
 
 // ═══════════════════════════════════════════════════════════
 //  UTILITATS UI
@@ -573,9 +619,32 @@ function actualitzarBiblia() {
 // ═══════════════════════════════════════════════════════════
 //  FASE 1 — Premisses
 // ═══════════════════════════════════════════════════════════
+function obtenirUserConfig() {
+  const provider = document.getElementById('sel-provider').value;
+  const apiKey = document.getElementById('inp-apikey').value.trim();
+  const model = document.getElementById('inp-model').value.trim();
+
+  if (!provider) {
+    throw new Error('Selecciona un proveïdor LLM.');
+  }
+  if (!apiKey) {
+    throw new Error('Introdueix una API key.');
+  }
+
+  return { provider, apiKey, model };
+}
+
 function iniciarFase1() {
   const sel = document.getElementById('sel-tematica').value;
   if (!sel) { toast('Selecciona primer una temàtica.'); return; }
+
+  try {
+    ESTAT.userConfig = obtenirUserConfig();
+  } catch (e) {
+    toast(e.message);
+    return;
+  }
+
   ESTAT.tematica = sel;
   ESTAT.history  = [];
   ESTAT.fase     = 1;
@@ -593,7 +662,7 @@ function iniciarFase1() {
       hideLoader(1);
       toast('Error: ' + err.message);
     })
-    .fase1_premisses(sel, []);
+    .fase1_premisses(sel, [], ESTAT.userConfig);
 }
 
 function renderPremisses(text) {
@@ -639,7 +708,7 @@ function iniciarFase2() {
       renderOpcionsDobles(res.response, 'opcions-estructura', 'btn-fase2', '_opcioEstructura');
     })
     .withFailureHandler(err => { hideLoader(2); toast('Error: ' + err.message); })
-    .fase2_estructura(ESTAT.premissaTriada, ESTAT.history);
+    .fase2_estructura(ESTAT.premissaTriada, ESTAT.history, ESTAT.userConfig);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -713,7 +782,7 @@ function iniciarFase3() {
       renderOpcionsDobles(res.response, 'opcions-personatges', 'btn-fase3', '_opcioPersonatges');
     })
     .withFailureHandler(err => { hideLoader(3); toast('Error: ' + err.message); })
-    .fase3_personatges(ESTAT.estructuraTriada, ESTAT.history);
+    .fase3_personatges(ESTAT.estructuraTriada, ESTAT.history, ESTAT.userConfig);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -736,7 +805,7 @@ function iniciarFase4() {
       renderOpcionsDobles(res.response, 'opcions-mon', 'btn-fase4', '_opcioMon');
     })
     .withFailureHandler(err => { hideLoader(4); toast('Error: ' + err.message); })
-    .fase4_mon(ESTAT.personatgesTriats, ESTAT.history);
+    .fase4_mon(ESTAT.personatgesTriats, ESTAT.history, ESTAT.userConfig);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -759,7 +828,7 @@ function iniciarFase5() {
       renderTaulaCapitols(res.response);
     })
     .withFailureHandler(err => { hideLoader(5); toast('Error: ' + err.message); })
-    .fase5_capitols(ESTAT.monTriat, ESTAT.history);
+    .fase5_capitols(ESTAT.monTriat, ESTAT.history, ESTAT.userConfig);
 }
 
 function renderTaulaCapitols(text) {
@@ -848,7 +917,7 @@ function escriureCapitolActual() {
       if (st) { st.textContent = '✅ Fet'; st.className = 'ch-status fet'; }
     })
     .withFailureHandler(err => { hideLoader(6); toast('Error: ' + err.message); })
-    .fase6_escriureCapitol(numCap, titol, total, ESTAT.history);
+    .fase6_escriureCapitol(numCap, titol, total, ESTAT.history, ESTAT.userConfig);
 }
 
 function mostrarCapitolEscrit(num, titol, text) {
