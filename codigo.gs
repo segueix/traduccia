@@ -209,8 +209,8 @@ function parseJsonResponse(rawResponse, providerName) {
 }
 
 const SYSTEM_DEFAULT = `Ets un escriptor expert en narrativa catalana i castellana.
-Segueixes escrupolosament el format demanat en cada prompt.
-Respons SEMPRE en català, amb riquesa lingüística i coherència narrativa total respecte al context acumulat.`;
+Treballes en flux en cadena i proposes opcions clares, breus i seleccionables.
+Respectes SEMPRE el format numèric sol·licitat i respons en català amb coherència narrativa.`;
 
 // ─── FASE 1: Genera 10 premisses ──────────────────────────
 function fase1_premisses(tematica, history, userConfig) {
@@ -238,84 +238,79 @@ Format ESTRICTE (res més, sense introduccions):
   return { response, history: newHistory };
 }
 
-// ─── FASE 2: 2 opcions d'estructura narrativa ─────────────
+// ─── FASE 2: 10 trames / nussos narratius ──────────────────
 function fase2_estructura(premissaTriada, history, userConfig) {
   const msgs = [
     ...history,
     { role: 'user', content: `He triat la premissa: "${premissaTriada}"` },
-    { role: 'assistant', content: 'Perfecte, incorporo la premissa al context de la bíblia narrativa.' },
-    { role: 'user', content: `Crea DUES propostes d'estructura narrativa completes per a aquesta obra.
-Format ESTRICTE:
-=== OPCIÓ 1 ===
-Model narratiu: [ex: 3 actes / viatge de l'heroi / estructura en W...]
-To general: [ex: fosc i reflexiu / àgil i humorístic...]
-Acte 1 — Plantejament: [resum 2 línies]
-Acte 2 — Desenvolupament: [resum 2 línies, incloent punt de gir]
-Acte 3 — Resolució: [resum 2 línies]
-Moment fosc del protagonista: [1 línia]
+    { role: 'assistant', content: 'Perfecte. Generaré possibles trames breus a partir d'aquesta premissa.' },
+    { role: 'user', content: `Genera 10 possibles trames/nussos narratius, breus i diferenciats, basats en la premissa triada.
 
-=== OPCIÓ 2 ===
-Model narratiu: [diferent a l'opció 1]
-To general: [diferent]
-Acte 1 — Plantejament: [resum 2 línies]
-Acte 2 — Desenvolupament: [resum 2 línies]
-Acte 3 — Resolució: [resum 2 línies]
-Moment fosc del protagonista: [1 línia]` }
+Format ESTRICTE (res més):
+1. [trama breu en 1-2 frases]
+2. [trama breu en 1-2 frases]
+3. [trama breu en 1-2 frases]
+4. [trama breu en 1-2 frases]
+5. [trama breu en 1-2 frases]
+6. [trama breu en 1-2 frases]
+7. [trama breu en 1-2 frases]
+8. [trama breu en 1-2 frases]
+9. [trama breu en 1-2 frases]
+10. [trama breu en 1-2 frases]` }
   ];
 
-  const response = callLLM(msgs, SYSTEM_DEFAULT, userConfig);
+  const response = callLLM(msgs, SYSTEM_DEFAULT, Object.assign({}, userConfig, { maxTokens: 1800 }));
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
 }
 
-// ─── FASE 3: 2 opcions de personatges ────────────────────
-function fase3_personatges(estructuraTriada, history, userConfig) {
+// ─── FASE 3: 10 arquetips de protagonista ──────────────────
+function fase3_personatges(tramaTriada, history, userConfig) {
   const msgs = [
     ...history,
-    { role: 'user', content: `He triat l'estructura: "${estructuraTriada}"` },
-    { role: 'assistant', content: 'Estructura guardada. Continuo construint la bíblia narrativa.' },
-    { role: 'user', content: `Crea DUES propostes de sistema de personatges coherents amb la premissa i l'estructura triades.
-Format ESTRICTE:
-=== OPCIÓ 1 ===
-PROTAGONISTA
-  Nom: | Edat: | Aspecte breu:
-  Ferida del passat (wound):
-  Allò que creu que vol (want):
-  Allò que realment necessita (need):
-  Defecte principal: | Virtut principal:
-  Arc de transformació:
-ANTAGONISTA / FORÇA OPOSADA
-  Nom o naturalesa: | Motivació:
-SECUNDARI 1: [nom — funció narrativa — relació amb el protagonista]
-SECUNDARI 2: [nom — funció narrativa — relació amb el protagonista]
+    { role: 'user', content: `He triat aquesta trama: "${tramaTriada}"` },
+    { role: 'assistant', content: 'Trama fixada. Proposo possibles protagonistes per continuar el flux en cadena.' },
+    { role: 'user', content: `Genera 10 possibles arquetips de protagonista coherents amb la trama triada.
+Cada ítem ha de contenir: Nom + Rol + Defecte principal.
 
-=== OPCIÓ 2 ===
-[mateixa estructura, personatges completament diferents]` }
+Format ESTRICTE (res més):
+1. Nom: [nom] | Rol: [rol narratiu/social] | Defecte: [defecte]
+2. Nom: [nom] | Rol: [rol narratiu/social] | Defecte: [defecte]
+3. Nom: [nom] | Rol: [rol narratiu/social] | Defecte: [defecte]
+4. Nom: [nom] | Rol: [rol narratiu/social] | Defecte: [defecte]
+5. Nom: [nom] | Rol: [rol narratiu/social] | Defecte: [defecte]
+6. Nom: [nom] | Rol: [rol narratiu/social] | Defecte: [defecte]
+7. Nom: [nom] | Rol: [rol narratiu/social] | Defecte: [defecte]
+8. Nom: [nom] | Rol: [rol narratiu/social] | Defecte: [defecte]
+9. Nom: [nom] | Rol: [rol narratiu/social] | Defecte: [defecte]
+10. Nom: [nom] | Rol: [rol narratiu/social] | Defecte: [defecte]` }
   ];
 
-  const response = callLLM(msgs, SYSTEM_DEFAULT, Object.assign({}, userConfig, { maxTokens: 2500 }));
+  const response = callLLM(msgs, SYSTEM_DEFAULT, Object.assign({}, userConfig, { maxTokens: 1800 }));
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
 }
 
-// ─── FASE 4: 2 opcions de món i ambientació ───────────────
-function fase4_mon(personatgesTriats, history, userConfig) {
+// ─── FASE 4: 10 finals / desenllaços ───────────────────────
+function fase4_desenllac(protagonistaTriat, history, userConfig) {
   const msgs = [
     ...history,
-    { role: 'user', content: `He triat els personatges: "${personatgesTriats}"` },
-    { role: 'assistant', content: 'Personatges incorporats. Ja tinc premissa, estructura i personatges.' },
-    { role: 'user', content: `Crea DUES propostes de món i ambientació per a l'obra.
-Format ESTRICTE:
-=== OPCIÓ 1 ===
-Època i lloc principal:
-Atmosfera dominant:
-LOCALITZACIÓ 1: [nom] — [descripció sensorial: vista, so, olor] — [càrrega emocional]
-LOCALITZACIÓ 2: [nom] — [descripció sensorial] — [càrrega emocional]
-LOCALITZACIÓ 3: [nom] — [descripció sensorial] — [càrrega emocional]
-Simbolisme del món (1 línia):
+    { role: 'user', content: `He triat aquest protagonista: "${protagonistaTriat}"` },
+    { role: 'assistant', content: 'Perfecte. Amb trama i protagonista triats, generaré possibles finals.' },
+    { role: 'user', content: `Genera 10 possibles finals/desenllaços per a la història, coherents amb la trama i el protagonista triats.
+Els finals han de ser diferenciats entre ells i explicats en 1-2 frases cadascun.
 
-=== OPCIÓ 2 ===
-[mateixa estructura, ambientació completament diferent]` }
+Format ESTRICTE (res més):
+1. [final/desenllaç en 1-2 frases]
+2. [final/desenllaç en 1-2 frases]
+3. [final/desenllaç en 1-2 frases]
+4. [final/desenllaç en 1-2 frases]
+5. [final/desenllaç en 1-2 frases]
+6. [final/desenllaç en 1-2 frases]
+7. [final/desenllaç en 1-2 frases]
+8. [final/desenllaç en 1-2 frases]
+9. [final/desenllaç en 1-2 frases]
+10. [final/desenllaç en 1-2 frases]` }
   ];
 
   const response = callLLM(msgs, SYSTEM_DEFAULT, Object.assign({}, userConfig, { maxTokens: 2000 }));
@@ -323,13 +318,14 @@ Simbolisme del món (1 línia):
   return { response, history: newHistory };
 }
 
-// ─── FASE 5: Taula de capítols (1 sola opció) ─────────────
-function fase5_capitols(monTriat, history, userConfig) {
+// ─── FASE 5: Compila bíblia + escaleta de capítols ─────────
+function fase5_compilarBiblia(desenllacTriat, history, userConfig) {
   const msgs = [
     ...history,
-    { role: 'user', content: `He triat el món i ambientació: "${monTriat}"` },
-    { role: 'assistant', content: 'La bíblia narrativa és completa: premissa, estructura, personatges i món.' },
-    { role: 'user', content: `Genera la taula definitiva de capítols per a l'obra. Entre 10 i 14 capítols.
+    { role: 'user', content: `He triat aquest desenllaç final: "${desenllacTriat}"` },
+    { role: 'assistant', content: 'Ja tinc premissa, trama, protagonista i desenllaç. Compilo la bíblia narrativa.' },
+    { role: 'user', content: `Compila la història completa i genera l'escaleta definitiva de capítols (entre 10 i 14 capítols), coherent amb totes les seleccions prèvies.
+
 Format per a cada capítol:
 **Capítol [N]: [Títol evocador]**
 Objectiu narratiu: [1 línia]
@@ -340,7 +336,7 @@ Ganxo final: [1 línia]
 ---` }
   ];
 
-  const response = callLLM(msgs, SYSTEM_DEFAULT, Object.assign({}, userConfig, { maxTokens: 3000 }));
+  const response = callLLM(msgs, SYSTEM_DEFAULT, Object.assign({}, userConfig, { maxTokens: 3200 }));
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
 }

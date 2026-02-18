@@ -413,9 +413,9 @@
     <div class="step-arrow">›</div>
     <div class="step-pill" data-step="3">Personatges</div>
     <div class="step-arrow">›</div>
-    <div class="step-pill" data-step="4">Món</div>
+    <div class="step-pill" data-step="4">Desenllaç</div>
     <div class="step-arrow">›</div>
-    <div class="step-pill" data-step="5">Capítols</div>
+    <div class="step-pill" data-step="5">Bíblia</div>
     <div class="step-arrow">›</div>
     <div class="step-pill" data-step="6">Escriptura</div>
   </div>
@@ -458,38 +458,38 @@
 
 <!-- FASE 2: Estructura narrativa -->
 <div class="card hidden" id="fase-2">
-  <h2><span class="icon">🏗️</span> Tria l'estructura narrativa</h2>
+  <h2><span class="icon">🏗️</span> Tria la trama</h2>
   <div class="loader-wrap" id="loader-2">
     <div class="spinner"></div>
-    <span>Generant propostes d'estructura…</span>
+    <span>Generant 10 trames possibles…</span>
   </div>
-  <div class="options-grid hidden" id="opcions-estructura"></div>
+  <div id="llista-estructures" class="premise-list"></div>
   <div class="btn-row">
-    <button class="btn btn-primary hidden" id="btn-fase2" onclick="iniciarFase3()">👥 Crear personatges</button>
+    <button class="btn btn-primary hidden" id="btn-fase2" onclick="iniciarFase3()">👤 Triar protagonista</button>
   </div>
 </div>
 
 <!-- FASE 3: Personatges -->
 <div class="card hidden" id="fase-3">
-  <h2><span class="icon">👥</span> Tria els personatges</h2>
+  <h2><span class="icon">👥</span> Tria el protagonista</h2>
   <div class="loader-wrap" id="loader-3">
     <div class="spinner"></div>
-    <span>Generant propostes de personatges…</span>
+    <span>Generant 10 protagonistes possibles…</span>
   </div>
-  <div class="options-grid hidden" id="opcions-personatges"></div>
+  <div id="llista-personatges" class="premise-list"></div>
   <div class="btn-row">
-    <button class="btn btn-primary hidden" id="btn-fase3" onclick="iniciarFase4()">🌍 Construir el món</button>
+    <button class="btn btn-primary hidden" id="btn-fase3" onclick="iniciarFase4()">🏁 Definir desenllaç</button>
   </div>
 </div>
 
-<!-- FASE 4: Món -->
+<!-- FASE 4: Desenllaç -->
 <div class="card hidden" id="fase-4">
-  <h2><span class="icon">🌍</span> Tria el món i l'ambientació</h2>
+  <h2><span class="icon">🏁</span> Tria el desenllaç</h2>
   <div class="loader-wrap" id="loader-4">
     <div class="spinner"></div>
-    <span>Generant propostes de món…</span>
+    <span>Generant 10 desenllaços possibles…</span>
   </div>
-  <div class="options-grid hidden" id="opcions-mon"></div>
+  <div id="llista-desenllac" class="premise-list"></div>
   <div class="btn-row">
     <button class="btn btn-primary hidden" id="btn-fase4" onclick="iniciarFase5()">📋 Generar taula de capítols</button>
   </div>
@@ -565,8 +565,8 @@ const ESTAT = {
   history:        [],
   premissaTriada: '',
   estructuraTriada:'',
-  personatgesTriats:'',
-  monTriat:       '',
+  personatgeTriat:'',
+  desenllacTriat: '',
   capitols:       [],      // [{num, titol, text}]
   capitalActual:  0,
   novellaTextos:  []       // textos dels capítols escrits
@@ -604,9 +604,9 @@ function actualitzarBiblia() {
   const items = [
     ['Temàtica',     ESTAT.tematica        || '—'],
     ['Premissa',     ESTAT.premissaTriada  || '—'],
-    ['Estructura',   ESTAT.estructuraTriada ? ESTAT.estructuraTriada.substring(0,80)+'…' : '—'],
-    ['Personatges',  ESTAT.personatgesTriats ? ESTAT.personatgesTriats.substring(0,80)+'…' : '—'],
-    ['Món',          ESTAT.monTriat        ? ESTAT.monTriat.substring(0,80)+'…' : '—'],
+    ['Trama',        ESTAT.estructuraTriada ? ESTAT.estructuraTriada.substring(0,80)+'…' : '—'],
+    ['Protagonista', ESTAT.personatgeTriat ? ESTAT.personatgeTriat.substring(0,80)+'…' : '—'],
+    ['Desenllaç',    ESTAT.desenllacTriat  ? ESTAT.desenllacTriat.substring(0,80)+'…' : '—'],
   ];
   b.innerHTML = items.map(([l,v]) =>
     `<div class="biblia-item"><div class="biblia-label">${l}</div><div class="biblia-val">${v}</div></div>`
@@ -716,60 +716,51 @@ function iniciarFase2() {
     .withSuccessHandler(res => {
       ESTAT.history = res.history;
       hideLoader(2);
-      renderOpcionsDobles(res.response, 'opcions-estructura', 'btn-fase2', '_opcioEstructura');
+      renderLlistaSeleccionable(res.response, 'llista-estructures', '_llistaTrames', '_idxTrama', 'btn-fase2');
     })
     .withFailureHandler(err => { hideLoader(2); toast('Error: ' + err.message); })
     .fase2_estructura(ESTAT.premissaTriada, ESTAT.history, USER_CONFIG);
 }
 
 // ═══════════════════════════════════════════════════════════
-//  HELPERS PER OPCIONS DOBLES
+//  HELPERS DE LLISTA NUMERADA (10 OPCIONS)
 // ═══════════════════════════════════════════════════════════
-function renderOpcionsDobles(text, wrapId, btnId, estatKey) {
+function renderLlistaSeleccionable(text, wrapId, stateListKey, selectedIdxKey, btnId) {
   const wrap = document.getElementById(wrapId);
-  const parts = text.split(/===\s*OPCIÓ\s*[12]\s*===/i).filter(p => p.trim().length > 0);
+  const lines = text.split('\n').filter(l => /^\d+\./.test(l.trim()));
 
-  if (parts.length < 2) {
-    // Fallback: mostra text complet en una sola carta
-    wrap.innerHTML = `<div class="option-card" onclick="triarOpcioDoble(0, this, '${estatKey}', \`${text.replace(/`/g,'\\`')}\`)">
-      <div class="opt-label">Opció única</div>
-      <div class="opt-check"></div>
-      <pre>${text}</pre>
-    </div>`;
-    ESTAT['_optionsList_' + estatKey] = [text];
-  } else {
-    ESTAT['_optionsList_' + estatKey] = parts.map(p => p.trim());
-    wrap.innerHTML = parts.map((p, i) => `
-      <div class="option-card" id="opt-${estatKey}-${i}" onclick="triarOpcioDoble(${i}, this, '${estatKey}')">
-        <div class="opt-label">Opció ${i+1}</div>
-        <div class="opt-check">${i===0 ? '' : ''}</div>
-        <pre>${escHtml(p.trim())}</pre>
-      </div>
-    `).join('');
+  if (lines.length === 0) {
+    wrap.innerHTML = `<pre style="white-space:pre-wrap;font-size:.9rem;">${escHtml(text)}</pre>`;
+    window[stateListKey] = [];
+    return;
   }
-  wrap.classList.remove('hidden');
+
+  const list = lines.map(l => l.replace(/^\d+\.\s*/, '').trim());
+  window[stateListKey] = list;
+  ESTAT[selectedIdxKey] = null;
+
+  wrap.innerHTML = list.map((item, i) => `
+    <div class="premise-item" id="${wrapId}-item-${i}" onclick="triarDeLlista('${wrapId}', '${selectedIdxKey}', ${i}, this)">
+      <input type="radio" name="${wrapId}-radio" id="${wrapId}-r-${i}">
+      <label for="${wrapId}-r-${i}">${escHtml(item)}</label>
+    </div>
+  `).join('');
+
   showBtn(btnId);
 }
 
-function triarOpcioDoble(idx, el, key) {
-  const prefix = 'opt-' + key + '-';
-  document.querySelectorAll(`[id^="${prefix}"]`).forEach(e => {
-    e.classList.remove('chosen');
-    e.querySelector('.opt-check').textContent = '';
-  });
+function triarDeLlista(wrapId, selectedIdxKey, idx, el) {
+  document.querySelectorAll(`#${wrapId} .premise-item`).forEach(e => e.classList.remove('chosen'));
   el.classList.add('chosen');
-  el.querySelector('.opt-check').textContent = '✓';
-  ESTAT['_opcioSelIdx_' + key] = idx;
+  const radio = el.querySelector('input[type=radio]');
+  if (radio) radio.checked = true;
+  ESTAT[selectedIdxKey] = idx;
 }
 
-function escHtml(t) {
-  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-function getOpcioTriada(key) {
-  const idx  = ESTAT['_opcioSelIdx_' + key];
-  const list = ESTAT['_optionsList_' + key];
-  if (idx === undefined || !list) return null;
+function getSeleccioLlista(stateListKey, selectedIdxKey) {
+  const list = window[stateListKey] || [];
+  const idx = ESTAT[selectedIdxKey];
+  if (idx === null || idx === undefined || !list[idx]) return null;
   return list[idx];
 }
 
@@ -777,8 +768,8 @@ function getOpcioTriada(key) {
 //  FASE 3 — Personatges
 // ═══════════════════════════════════════════════════════════
 function iniciarFase3() {
-  const tri = getOpcioTriada('_opcioEstructura');
-  if (!tri) { toast('Tria una opció d\'estructura.'); return; }
+  const tri = getSeleccioLlista('_llistaTrames', '_idxTrama');
+  if (!tri) { toast('Tria una trama.'); return; }
   ESTAT.estructuraTriada = tri;
   ESTAT.fase = 3;
   updateProgress(3);
@@ -790,19 +781,19 @@ function iniciarFase3() {
     .withSuccessHandler(res => {
       ESTAT.history = res.history;
       hideLoader(3);
-      renderOpcionsDobles(res.response, 'opcions-personatges', 'btn-fase3', '_opcioPersonatges');
+      renderLlistaSeleccionable(res.response, 'llista-personatges', '_llistaProtagonistes', '_idxProtagonista', 'btn-fase3');
     })
     .withFailureHandler(err => { hideLoader(3); toast('Error: ' + err.message); })
     .fase3_personatges(ESTAT.estructuraTriada, ESTAT.history, USER_CONFIG);
 }
 
 // ═══════════════════════════════════════════════════════════
-//  FASE 4 — Món
+//  FASE 4 — Desenllaç
 // ═══════════════════════════════════════════════════════════
 function iniciarFase4() {
-  const tri = getOpcioTriada('_opcioPersonatges');
-  if (!tri) { toast('Tria una opció de personatges.'); return; }
-  ESTAT.personatgesTriats = tri;
+  const tri = getSeleccioLlista('_llistaProtagonistes', '_idxProtagonista');
+  if (!tri) { toast('Tria un protagonista.'); return; }
+  ESTAT.personatgeTriat = tri;
   ESTAT.fase = 4;
   updateProgress(4);
   actualitzarBiblia();
@@ -813,19 +804,19 @@ function iniciarFase4() {
     .withSuccessHandler(res => {
       ESTAT.history = res.history;
       hideLoader(4);
-      renderOpcionsDobles(res.response, 'opcions-mon', 'btn-fase4', '_opcioMon');
+      renderLlistaSeleccionable(res.response, 'llista-desenllac', '_llistaDesenllacos', '_idxDesenllac', 'btn-fase4');
     })
     .withFailureHandler(err => { hideLoader(4); toast('Error: ' + err.message); })
-    .fase4_mon(ESTAT.personatgesTriats, ESTAT.history, USER_CONFIG);
+    .fase4_desenllac(ESTAT.personatgeTriat, ESTAT.history, USER_CONFIG);
 }
 
 // ═══════════════════════════════════════════════════════════
-//  FASE 5 — Taula de capítols
+//  FASE 5 — Bíblia i taula de capítols
 // ═══════════════════════════════════════════════════════════
 function iniciarFase5() {
-  const tri = getOpcioTriada('_opcioMon');
-  if (!tri) { toast('Tria una opció de món.'); return; }
-  ESTAT.monTriat = tri;
+  const tri = getSeleccioLlista('_llistaDesenllacos', '_idxDesenllac');
+  if (!tri) { toast('Tria un desenllaç.'); return; }
+  ESTAT.desenllacTriat = tri;
   ESTAT.fase = 5;
   updateProgress(5);
   actualitzarBiblia();
@@ -839,7 +830,7 @@ function iniciarFase5() {
       renderTaulaCapitols(res.response);
     })
     .withFailureHandler(err => { hideLoader(5); toast('Error: ' + err.message); })
-    .fase5_capitols(ESTAT.monTriat, ESTAT.history, USER_CONFIG);
+    .fase5_compilarBiblia(ESTAT.desenllacTriat, ESTAT.history, USER_CONFIG);
 }
 
 function renderTaulaCapitols(text) {
