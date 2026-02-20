@@ -564,6 +564,21 @@ function fase10_outline(contextComprimit, estructuraTriada, history, userConfig,
   return { response, history: newHistory };
 }
 
+// ─── FASE 11: Subtrames i fils temàtics ─────────────────────
+// outline: string compacte "Cap. N — Títol" per línia (sense POV ni detalls)
+function fase11_subtrames(contextComprimit, outline, history, userConfig, tematica) {
+  const msgs = [
+    ...history,
+    {
+      role: 'user',
+      content: `Tenim definit el món, els personatges i l'outline de la novel·la:\n\n${contextComprimit}\n\nOUTLINE (capítols):\n${outline}\n\n---\nGenera entre 5 i 7 subtrames per a la novel·la. Cada subtrama ha de:\n- Tenir vida pròpia independent de la trama principal\n- Estar ancorada a capítols concrets de l'outline (inici, complicació i resolució)\n- Associar-se a un fil temàtic de la novel·la (amor, traïció, identitat, poder, etc.)\n- Involucrar personatges de l'elenc que no siguin sempre el protagonista\n\nMarca amb (Recomanat) les 3 o 4 subtrames més necessàries per enriquir la novel·la.\n\nFormat ESTRICTE (una subtrama per línia, res més, sense introducció):\n1. **[Nom de la subtrama]** | Inici: Cap. N | Complicació: Cap. N | Resolució: Cap. N | Tema: [fil temàtic associat]\n2. **[Nom de la subtrama]** | Inici: Cap. N | Complicació: Cap. N | Resolució: Cap. N | Tema: [fil temàtic associat]\n3. ...\n4. ...\n5. ...\n6. ... (Recomanat)\n7. ...`
+    }
+  ];
+  const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens: 2048 }));
+  const newHistory = [...msgs, { role: 'assistant', content: response }];
+  return { response, history: newHistory };
+}
+
 // ─── Export a Google Doc (format literari) ──────────────────
 function exportarADoc(titol, contingut) {
   const doc  = DocumentApp.create(titol || 'Conte');

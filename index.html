@@ -513,6 +513,8 @@
     <div class="step-pill" data-step="9">Estructura</div>
     <div class="step-arrow">›</div>
     <div class="step-pill" data-step="10">Capítols</div>
+    <div class="step-arrow">›</div>
+    <div class="step-pill" data-step="11">Subtrames</div>
   </div>
 </div>
 
@@ -670,6 +672,25 @@
       <button class="btn btn-primary"   onclick="iniciarFase7()">🌍 Expandir a novel·la</button>
     </div>
     <div id="export-link-wrap" class="hidden" style="margin-top:14px;"></div>
+  </div>
+</div>
+
+<!-- FASE 11: Subtrames i fils temàtics -->
+<div class="card hidden" id="fase-11">
+  <h2><span class="icon">🧵</span> Subtrames i fils temàtics</h2>
+  <div class="loader-wrap" id="loader-11">
+    <div class="spinner"></div>
+    <span>Generant subtrames…</span>
+  </div>
+  <div id="subtrames-selector" class="hidden">
+    <p style="color:var(--text2);font-size:.9rem;margin-bottom:12px;">Selecciona les subtrames que vols desenvolupar (mínim 2). Les <span style="color:var(--accent2);font-weight:600;">Recomanades</span> ja estan marcades:</p>
+    <div class="seleccio-comptador">
+      <span class="num" id="subtrames-num">0</span> <span class="rang">seleccionades (mínim 2)</span>
+    </div>
+    <div id="llista-subtrames" class="premise-list"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="confirmarSubtrames()">📅 Cronologia</button>
+    </div>
   </div>
 </div>
 
@@ -834,7 +855,9 @@ const ESTAT = {
   _idxEstructura:           null,
   estructuraTriada:         '',
   // Outline de capítols
-  outline:                  []
+  outline:                  [],
+  // Subtrames
+  subtrames:                []
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -1639,8 +1662,99 @@ function outlineAfegir(afterIdx) {
   }, 50);
 }
 
+// ═══════════════════════════════════════════════════════════
+//  FASE 10 → FASE 11: Subtrames i fils temàtics
+// ═══════════════════════════════════════════════════════════
 function iniciarFase11() {
-  toast('La fase de subtrames arribarà aviat!');
+  ESTAT.fase = 11;
+  updateProgress(11);
+  showCard('fase-11');
+  document.getElementById('subtrames-selector').classList.add('hidden');
+  showLoader(11);
+
+  // Outline compacte: "Cap. N — Títol" per línia
+  const outlineCompacte = ESTAT.outline
+    .map(c => 'Cap. ' + c.num + ' — ' + (c.titol || c.text || '').split('|')[0].trim())
+    .join('\n');
+
+  const ctx = comprimirContextClient();
+
+  google.script.run
+    .withSuccessHandler(res => {
+      ESTAT.history = res.history;
+      hideLoader(11);
+      renderLlistaSubtrames(res.response);
+    })
+    .withFailureHandler(err => { hideLoader(11); toast('Error: ' + err.message); })
+    .fase11_subtrames(ctx, outlineCompacte, ESTAT.history, USER_CONFIG, ESTAT.tematica);
+}
+
+function renderLlistaSubtrames(text) {
+  const wrap  = document.getElementById('llista-subtrames');
+  const lines = text.split('\n').filter(l => /^\d+\./.test(l.trim()));
+
+  if (lines.length === 0) {
+    wrap.innerHTML = `<pre style="white-space:pre-wrap;font-size:.9rem;">${escHtml(text)}</pre>`;
+    document.getElementById('subtrames-selector').classList.remove('hidden');
+    return;
+  }
+
+  const list = lines.map(l => l.replace(/^\d+\.\s*/, '').trim());
+
+  wrap.innerHTML = list.map((item, i) => {
+    const esRecomanat = /\(Recomanat\)/i.test(item);
+    const textNet     = item.replace(/\s*\(Recomanat\)\s*/i, '').trim();
+    const displayHtml = escHtml(textNet).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    const badge       = esRecomanat ? `<span class="badge-recomanat">Recomanat</span>` : '';
+    const checkedAttr = esRecomanat ? 'checked' : '';
+    const chosenClass = esRecomanat ? 'chosen' : '';
+    return `<div class="world-item ${chosenClass}" id="subtrama-item-${i}" data-text="${escHtml(textNet)}" onclick="toggleSubtrama(${i}, this)">
+      <input type="checkbox" id="subtrama-cb-${i}" ${checkedAttr} onclick="event.stopPropagation();" onchange="syncSubtrama(${i})">
+      <label for="subtrama-cb-${i}">${badge}${displayHtml}</label>
+    </div>`;
+  }).join('');
+
+  actualitzarComptadorSubtrames();
+  document.getElementById('subtrames-selector').classList.remove('hidden');
+  setTimeout(() => {
+    document.getElementById('fase-11').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+function toggleSubtrama(idx, el) {
+  const cb = document.getElementById('subtrama-cb-' + idx);
+  cb.checked = !cb.checked;
+  el.classList.toggle('chosen', cb.checked);
+  actualitzarComptadorSubtrames();
+}
+
+function syncSubtrama(idx) {
+  const cb = document.getElementById('subtrama-cb-' + idx);
+  const el = document.getElementById('subtrama-item-' + idx);
+  el.classList.toggle('chosen', cb.checked);
+  actualitzarComptadorSubtrames();
+}
+
+function actualitzarComptadorSubtrames() {
+  const n   = document.querySelectorAll('#llista-subtrames input[type=checkbox]:checked').length;
+  const num = document.getElementById('subtrames-num');
+  if (num) {
+    num.textContent = n;
+    num.style.color = n >= 2 ? 'var(--success)' : 'var(--warning)';
+  }
+}
+
+function confirmarSubtrames() {
+  const checkboxes = document.querySelectorAll('#llista-subtrames input[type=checkbox]:checked');
+  if (checkboxes.length < 2) { toast('Selecciona almenys 2 subtrames.'); return; }
+
+  ESTAT.subtrames = Array.from(checkboxes).map(cb => {
+    const item = document.getElementById(cb.id.replace('subtrama-cb-', 'subtrama-item-'));
+    return item ? item.dataset.text : '';
+  }).filter(t => t.length > 0);
+
+  toast('Subtrames confirmades. Cronologia en construcció…');
+  // Placeholder per a la fase 12
 }
 </script>
 </body>
