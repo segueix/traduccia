@@ -178,15 +178,16 @@ function parseJsonResponse(rawResponse, providerName) {
 const SYSTEM_DEFAULT = `Ets un mestre del conte literari breu en català.
 Apliques el principi d'unitat d'efecte de Poe: cada paraula serveix un únic impacte emocional final.
 Escrius amb economia de paraules, primera frase magnètica, tensió creixent i finals memorables que ressonen.
-Mai desperdicies una frase. Prioritzes mostrar sobre explicar (show, don't tell).
-Respons sempre en català, amb veu literària precisa i original.`;
+Mai desperdicies una frase. Prioritzes mostrar sobre explicar.
+Escrius EXCLUSIVAMENT en català. Mai inclous paraules, frases ni comentaris en anglès o cap altra llengua. Mai afegeixes notes meta, indicacions de número de part ni cap text fora de la narració literària. Escriu directament el text.`;
 
 // ─── System prompt dinàmic per gènere ──────────────────────
 function getSystemPrompt(tematica) {
-  const isNoir = tematica && /noir|negr[ae]|nòrdi/i.test(tematica);
-  if (!isNoir) return SYSTEM_DEFAULT;
+  const isNoir    = tematica && /noir|negr[ae]|nòrdi/i.test(tematica);
+  const isTolkien = tematica && /fantàstic|fantastic/i.test(tematica);
 
-  return SYSTEM_DEFAULT + `
+  if (isNoir) {
+    return SYSTEM_DEFAULT + `
 
 ── ESTIL NORDIC NOIR (Stieg Larsson) ──
 Prosa crua, directa i atmosfèrica: frases netes sense ornaments, carregades de tensió latent.
@@ -197,6 +198,22 @@ Crítica social integrada a la trama, mai com a discurs extern o didàctic.
 Protagonistes durs i traumatitzats amb una tenacitat quasi obsessiva: la ferida personal impulsa la investigació.
 Estructura de revelació progressiva: el que semblava un cas puntual destapa un sistema podrit.
 Ritme pausat i metòdic en la investigació, però amb pics d'acció breu i brutal.`;
+  }
+
+  if (isTolkien) {
+    return SYSTEM_DEFAULT + `
+
+── ESTIL J.R.R. TOLKIEN ──
+Prosa èpica, lírica i detallada: les descripcions del paisatge i el món transmeten profunditat i antiguitat immemorial.
+Univers tolkienià: situa la història a la Terra Mitjana o en un món de fantasia directament inspirat en el seu llegat. Incorpora races com els Eldar (elfs), els Khazad (nans), els hobits, els homes, els orcs, els ents o altres criatures del bestiari tolkienià. Els noms propis han de tenir la fonologia i el registre del corpus tolkienià.
+Temes centrals: la corrupció del poder, el pes de la responsabilitat, la camaraderia i la lleialtat, la lluita entre la llum i les tenebres, la bellesa efímera davant el pas implacable del temps i l'oblit.
+Llenguatge solemne però accessible: frases llargues i rítmiques, ús mesurat de construccions arcaiques, incorporació de cançons, rimes o fragments en llengua inventada quan l'escena ho demana.
+Ambientació concreta i grandiosa: paisatges amb nom i caràcter propi (boscos immòbils, muntanyes impassibles, torres de pedra negra, planes interminables), detalls arquitectònics i culturals que evoquen civilitzacions antigues amb història pròpia.
+La natura com a presència viva: arbres, rius i terres no són decorat sinó actors amb memòria, voluntat i opinió.
+El mal té pes físic: no s'explica, es percep en l'aire que s'espesseix, en la llum que s'apaga, en el silenci sobtat dels ocells i la por als ulls dels animals.`;
+  }
+
+  return SYSTEM_DEFAULT;
 }
 
 // ─── FASE 1: 10 premisses per a contes ─────────────────────
@@ -371,7 +388,7 @@ OBERTURA: primera frase magnètica, tensió immediata. Primers 3 paràgrafs sens
 ESTRUCTURA: unitat d'efecte, tensió creixent, punt d'inflexió a les 2/3 parts.
 ESTIL: mostra no expliquis, detalls sensorials concrets, ritme variat, veu única, diàlegs que revelen caràcter.
 FINAL: l'última frase ressona i tanca un cercle del principi.${noirExtra}
-Escriu directament el conte, sense títol ni nota de l'autor.`;
+Escriu directament el conte en català, sense títol ni nota de l'autor. Cap paraula en anglès ni cap altra llengua.`;
 
   } else if (partNum === 1) {
     userContent =
@@ -385,7 +402,7 @@ Objectiu d'aquesta part:
 → Plantar la tensió central i el conflicte que s'ha de resoldre.
 → Acabar en un punt de suspens que demani la continuació (NO resolguis res).
 Mostra, no expliquis. Detalls sensorials concrets. Veu única.${noirExtra}
-Escriu directament, sense títol ni indicació de "Part 1".`;
+Escriu directament en català, sense títol ni cap indicació de "Part 1". Cap paraula en anglès ni cap altra llengua.`;
 
   } else if (partNum < totalParts) {
     userContent =
@@ -394,8 +411,9 @@ Escriu directament, sense títol ni indicació de "Part 1".`;
 Objectiu d'aquesta part:
 → Augmenta el conflicte i la pressió sobre el protagonista.
 → Introdueix el punt d'inflexió o la complicació principal.
-→ Acaba quan la tensió arriba al màxim, just abans de la resolució.${noirExtra}
-Continua directament des d'on ha quedat el text. Sense cap indicació de part.`;
+→ Acaba quan la tensió arriba al màxim, just abans de la resolució.
+→ Mantén exactament la mateixa veu narrativa, to i registre de les parts anteriors.${noirExtra}
+Continua directament la narració en català, des d'on s'ha aturat el text anterior. Sense cap indicació de número de part ni comentari fora de la ficció. Cap paraula en anglès ni cap altra llengua.`;
 
   } else {
     userContent =
@@ -405,8 +423,9 @@ El desenllaç OBLIGATORI és: "${finalTriat}"
 
 → Executa el clímax i la resolució amb precisió literària.
 → El desenllaç ha de ser inevitable en retrospectiva però imprevist durant la lectura.
-→ L'última frase ha de ressonar i tancar un cercle obert al principi.${noirExtra}
-Continua directament des d'on ha quedat el text. Sense cap indicació de part.`;
+→ L'última frase ha de ressonar i tancar un cercle obert al principi.
+→ Mantén exactament la mateixa veu narrativa i to de les parts anteriors.${noirExtra}
+Continua directament la narració en català, des d'on s'ha aturat el text anterior. Sense cap indicació de número de part ni comentari fora de la ficció. Cap paraula en anglès ni cap altra llengua.`;
   }
 
   const msgs      = [...history, { role: 'user', content: userContent }];
@@ -429,6 +448,34 @@ function millorarConte(instruccio, conteActual, estilDesc, history, userConfig, 
   const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens }));
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
+}
+
+// ─── EDITOR: Anàlisi crítica amb un segon LLM ───────────────
+// editorConfig: { provider, apiKey, model } del segon LLM
+function analitzarAmbEditor(conteActual, estilDesc, tematica, editorConfig) {
+  const systemEditor =
+`Ets un editor literari expert i crític literari rigorós. La teva tasca és avaluar un conte breu en català i emetre un judici literari honest i constructiu.
+Si el conte és literàriament sòlid i no necessita millores substancials, digues-ho clarament i justifica breument per què funciona.
+Si detectes problemes o àrees de millora, descriu-los amb precisió i proposa UNA instrucció concreta de millora directament accionable.
+En cas de proposar millora, l'última línia de la teva resposta ha de tenir exactament aquest format:
+INSTRUCCIÓ: [instrucció accionable en una sola frase]
+Respons sempre en català. La teva anàlisi ha de ser breu, directa i útil.`;
+
+  const userMsg =
+`Analitza aquest conte breu:
+
+Gènere: ${tematica}
+Estil objectiu: ${estilDesc}
+
+---
+${conteActual}
+---
+
+Avalua la qualitat literària. Si és correcte, digues-ho i justifica-ho breument. Si cal millorar, identifica el problema principal i proposa una instrucció concreta de millora (última línia amb el format INSTRUCCIÓ: [...]).`;
+
+  const msgs     = [{ role: 'user', content: userMsg }];
+  const response = callLLM(msgs, systemEditor, Object.assign({}, editorConfig, { maxTokens: 1024 }));
+  return { response };
 }
 
 // ─── Export a Google Doc (format literari) ──────────────────

@@ -331,6 +331,40 @@
   }
   .export-link:hover { background: #1e1b38; }
 
+  /* ── Editor IA (segon LLM) ── */
+  .editor-toggle {
+    margin-top: 16px;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+  }
+  .editor-config {
+    margin-top: 12px;
+    background: var(--surface2);
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .editor-result {
+    margin-top: 14px;
+    padding: 16px 20px;
+    background: #12122a;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    font-size: .9rem;
+    line-height: 1.75;
+    color: var(--text);
+    white-space: pre-wrap;
+  }
+  .editor-label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    color: var(--accent2);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin-bottom: 10px;
+  }
+
   /* ── Secció amagada ── */
   .hidden { display: none !important; }
 </style>
@@ -530,6 +564,42 @@
     <div class="millora-row">
       <input type="text" id="millora-input" placeholder="Vols millorar alguna cosa? (ex: «fes l'ending més abrupte»)">
       <button class="btn btn-secondary" onclick="millorarConte()">✨ Millorar</button>
+    </div>
+
+    <!-- Editor IA -->
+    <div class="editor-toggle">
+      <button class="btn btn-ghost" onclick="toggleEditor()" id="btn-toggle-editor" style="font-size:.85rem;padding:7px 16px;">🎭 Usar Editor IA (segon LLM)</button>
+
+      <div id="editor-panel" class="hidden">
+        <div class="editor-config">
+          <label class="field-label" for="editor-provider">Proveïdor de l'Editor</label>
+          <select id="editor-provider" onchange="actualitzarModelEditor()">
+            <option value="anthropic">Anthropic (Claude)</option>
+            <option value="openai">OpenAI (GPT-4o)</option>
+            <option value="gemini">Google (Gemini 1.5)</option>
+          </select>
+
+          <label class="field-label" for="editor-model">Model de l'Editor</label>
+          <input type="text" id="editor-model" value="claude-opus-4-1" placeholder="claude-opus-4-1">
+
+          <label class="field-label" for="editor-apikey">API Key de l'Editor</label>
+          <input type="password" id="editor-apikey" placeholder="API key del segon LLM">
+
+          <div class="btn-row" style="margin-top:12px;">
+            <button class="btn btn-secondary" onclick="analitzarAmbEditor()" style="font-size:.88rem;">🔍 Analitzar amb Editor</button>
+          </div>
+        </div>
+
+        <div id="editor-result-wrap" class="hidden">
+          <div class="editor-result">
+            <span class="editor-label">Crítica de l'Editor</span>
+            <div id="editor-result-text"></div>
+          </div>
+          <div class="btn-row" style="margin-top:10px;">
+            <button class="btn btn-secondary hidden" id="btn-aplicar-editor" onclick="aplicarSuggerimentEditor()" style="font-size:.85rem;">✨ Aplicar suggeriment de l'Editor</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="btn-row">
@@ -944,6 +1014,73 @@ function millorarConte() {
     })
     .withFailureHandler(err => { hideLoader(6); toast('Error: ' + err.message); })
     .millorarConte(instruccio, ESTAT.conteText, ESTAT.estil.desc, ESTAT.history, USER_CONFIG, ESTAT.tematica);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  EDITOR IA (segon LLM)
+// ═══════════════════════════════════════════════════════════
+let EDITOR_CONFIG      = null;
+let _editorSuggeriment = '';
+
+function toggleEditor() {
+  const panel  = document.getElementById('editor-panel');
+  const btn    = document.getElementById('btn-toggle-editor');
+  const hidden = panel.classList.toggle('hidden');
+  btn.textContent = hidden
+    ? '🎭 Usar Editor IA (segon LLM)'
+    : '▲ Amagar Editor IA';
+}
+
+function actualitzarModelEditor() {
+  const provider = document.getElementById('editor-provider').value;
+  const input    = document.getElementById('editor-model');
+  const def      = MODEL_DEFAULTS[provider] || '';
+  input.placeholder = def;
+  input.value       = def;
+}
+
+function analitzarAmbEditor() {
+  if (!ESTAT.conteText) { toast('Primer genera el conte.'); return; }
+
+  const provider = document.getElementById('editor-provider').value;
+  const model    = document.getElementById('editor-model').value.trim();
+  const apiKey   = document.getElementById('editor-apikey').value.trim();
+
+  if (!apiKey) { toast("Introdueix l'API key de l'Editor."); return; }
+  if (!model)  { toast("Introdueix el model de l'Editor."); return; }
+
+  EDITOR_CONFIG = { provider, apiKey, model };
+
+  const wrap = document.getElementById('editor-result-wrap');
+  const txt  = document.getElementById('editor-result-text');
+  wrap.classList.remove('hidden');
+  txt.textContent = 'Analitzant el conte…';
+  document.getElementById('btn-aplicar-editor').classList.add('hidden');
+  _editorSuggeriment = '';
+
+  google.script.run
+    .withSuccessHandler(res => {
+      const text = res.response;
+      txt.textContent = text;
+
+      // Extreure instrucció concreta si l'editor en proposa una
+      const match = text.match(/INSTRUCCIÓ:\s*(.+)$/m);
+      if (match) {
+        _editorSuggeriment = match[1].trim();
+        document.getElementById('btn-aplicar-editor').classList.remove('hidden');
+      }
+    })
+    .withFailureHandler(err => {
+      txt.textContent = 'Error: ' + err.message;
+    })
+    .analitzarAmbEditor(ESTAT.conteText, ESTAT.estil.desc, ESTAT.tematica, EDITOR_CONFIG);
+}
+
+function aplicarSuggerimentEditor() {
+  if (!_editorSuggeriment) return;
+  document.getElementById('millora-input').value = _editorSuggeriment;
+  document.getElementById('millora-input').focus();
+  toast("Instrucció de l'Editor copiada. Edita-la si cal i clica Millorar.");
 }
 
 // ═══════════════════════════════════════════════════════════
