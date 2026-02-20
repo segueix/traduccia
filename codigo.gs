@@ -762,7 +762,7 @@ function analitzarAmbEditor(userPrompt, userConfig) {
 // capitolsData: array de {num, outlineText, text} per als capítols generats.
 // biblia:       string (bíblia de consistència compilada).
 // userConfig:   configuració del LLM de l'usuari.
-function fase15_revisioCoherencia(capitolsData, biblia, userConfig) {
+function fase15_revisioCoherencia(capitolsData, biblia, userConfig, fetsCanonicsText) {
   var d = capitolsData || [];
 
   // Comprimir cada capítol: primeres i últimes 200 paraules + outline
@@ -779,8 +779,12 @@ function fase15_revisioCoherencia(capitolsData, biblia, userConfig) {
     ? '=== BÍBLIA DE REFERÈNCIA ===\n' + biblia.substring(0, 1200) + '\n\n'
     : '';
 
+  var fetsCanonicsRef = fetsCanonicsText && String(fetsCanonicsText).trim()
+    ? '=== FETS CANÒNICS RECENTS ===\n' + String(fetsCanonicsText).substring(0, 2000) + '\n\n'
+    : '';
+
   var userPrompt =
-    bibliaRef + resumCapitols + '\n\n---\n' +
+    bibliaRef + fetsCanonicsRef + resumCapitols + '\n\n---\n' +
     'Analitza la coherència dels ' + d.length + ' capítols anteriors. Identifica:\n' +
     '1. Contradiccions factuals (noms, dates, llocs, fets que canvien)\n' +
     '2. Canvis de to o veu narrativa injustificats\n' +
@@ -800,9 +804,13 @@ function fase15_revisioCoherencia(capitolsData, biblia, userConfig) {
 // ─── FASE 14: Escriure un capítol (patró anti-timeout, 2 parts) ──
 // partNum:      1 (primera meitat) o 2 (segona meitat)
 // historialPart: null per Part 1; historial retornat per Part 1 per a Part 2
-function escriureCapitol(partNum, numCapitol, totalCapitols, biblia, outlineCapitol, textCapAnterior, estilDesc, userConfig, tematica, historialPart) {
+function escriureCapitol(partNum, numCapitol, totalCapitols, biblia, outlineCapitol, textCapAnterior, estilDesc, userConfig, tematica, historialPart, fetsCanonicsText) {
   var systemForCap = getSystemPrompt(tematica) +
     '\n\n=== BÍBLIA DE LA NOVEL·LA ===\n' + (biblia || '');
+
+  if (fetsCanonicsText && String(fetsCanonicsText).trim()) {
+    systemForCap += '\n\n=== FETS CANÒNICS RECENTS (NO CONTRADIR) ===\n' + String(fetsCanonicsText).substring(0, 2000);
+  }
 
   var contextAnterior = '';
   if (textCapAnterior && textCapAnterior.trim()) {
