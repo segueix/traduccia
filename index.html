@@ -1559,6 +1559,7 @@ function construirContextFetsCanonics(limit) {
 // ═══════════════════════════════════════════════════════════
 let USER_CONFIG = null;
 let isAutoMode  = false;
+let intentsRevisio = 0;
 
 function activarPilotAutomatic() {
   isAutoMode = true;
@@ -2907,6 +2908,19 @@ function generarCapitolActual() {
           mostrarCapitol(idx);
           verificarRevisioDisponible();
           toast('Capítol ' + (idx + 1) + ' generat!');
+
+          if (isAutoMode) {
+            if (((idx + 1) % 3) === 0) {
+              iniciarRevisio();
+            } else {
+              ESTAT._capActual++;
+              if (ESTAT._capActual < ESTAT.outline.length) {
+                setTimeout(() => generarCapitolActual(), 2000);
+              } else {
+                iniciarFase17();
+              }
+            }
+          }
         })
         .withFailureHandler(function(err) {
           ESTAT._capGenerant = null;
@@ -2990,6 +3004,10 @@ function millorarCapitolActual() {
       document.getElementById('cap-millora-lliure-wrap').classList.add('hidden');
       mostrarCapitol(idx);
       toast('Capítol ' + (idx + 1) + ' polit.');
+
+      if (isAutoMode) {
+        setTimeout(() => iniciarRevisio(), 2000);
+      }
     })
     .withFailureHandler(function(err) {
       document.getElementById('cap-loader').classList.remove('visible');
@@ -3335,66 +3353,84 @@ function renderRevisio(text) {
   const container = document.getElementById('revisio-result');
   _revisioCorreccions = [];
 
+  const blocs  = [];
+
   if (!text || !text.trim() || /cap inconsistència/i.test(text)) {
     container.innerHTML = `<div class="revisio-ok">✅ Cap inconsistència detectada als capítols revisats.</div>`;
-    return;
-  }
+  } else {
+    // Parsejar blocs PROBLEMA / CORRECCIÓ
+    let current  = null;
 
-  // Parsejar blocs PROBLEMA / CORRECCIÓ
-  const blocs  = [];
-  let current  = null;
-
-  text.split('\n').forEach(line => {
-    const l = line.trim();
-    if (/^PROBLEMA:/i.test(l)) {
-      if (current) blocs.push(current);
-      current = { problema: l.replace(/^PROBLEMA:\s*/i, '').trim(), capNum: null, instruccio: '' };
-    } else if (/^CORREC/i.test(l) && current) {
-      // "CORRECCIÓ: [Cap. N] instrucció" o "CORRECCIO: [Cap. N] instrucció"
-      const raw      = l.replace(/^CORREC[CÇ]I[ÓO]:\s*/i, '').trim();
-      const capMatch = raw.match(/^\[?Cap\.?\s*(\d+)\]?\s*/i);
-      if (capMatch) {
-        current.capNum    = parseInt(capMatch[1]);
-        current.instruccio = raw.replace(/^\[?Cap\.?\s*\d+\]?\s*/i, '').trim();
-      } else {
-        current.instruccio = raw;
+    text.split('\n').forEach(line => {
+      const l = line.trim();
+      if (/^PROBLEMA:/i.test(l)) {
+        if (current) blocs.push(current);
+        current = { problema: l.replace(/^PROBLEMA:\s*/i, '').trim(), capNum: null, instruccio: '' };
+      } else if (/^CORREC/i.test(l) && current) {
+        // "CORRECCIÓ: [Cap. N] instrucció" o "CORRECCIO: [Cap. N] instrucció"
+        const raw      = l.replace(/^CORREC[CÇ]I[ÓO]:\s*/i, '').trim();
+        const capMatch = raw.match(/^\[?Cap\.?\s*(\d+)\]?\s*/i);
+        if (capMatch) {
+          current.capNum    = parseInt(capMatch[1]);
+          current.instruccio = raw.replace(/^\[?Cap\.?\s*\d+\]?\s*/i, '').trim();
+        } else {
+          current.instruccio = raw;
+        }
+      } else if (current && l && !current.instruccio) {
+        current.problema += ' ' + l;
       }
-    } else if (current && l && !current.instruccio) {
-      current.problema += ' ' + l;
-    }
-  });
-  if (current) blocs.push(current);
+    });
+    if (current) blocs.push(current);
 
-  if (blocs.length === 0) {
-    container.innerHTML = `<pre style="white-space:pre-wrap;font-size:.88rem;color:var(--text2);">${escHtml(text)}</pre>`;
-    return;
+    if (blocs.length === 0) {
+      container.innerHTML = `<pre style="white-space:pre-wrap;font-size:.88rem;color:var(--text2);">${escHtml(text)}</pre>`;
+    } else {
+      // Guardar correccions per accés per índex des d'onclick
+      _revisioCorreccions = blocs.map(b => ({ capIdx: b.capNum ? b.capNum - 1 : null, instruccio: b.instruccio }));
+
+      const totalLabel = `${blocs.length} problema${blocs.length !== 1 ? 'es' : ''} detectat${blocs.length !== 1 ? 's' : ''}`;
+      container.innerHTML = `
+        <p style="font-size:.8rem;color:var(--text2);margin-bottom:14px;">${escHtml(totalLabel)}</p>
+        ${blocs.map((b, i) => {
+          const capBadge = b.capNum
+            ? `<span class="revisio-cap-badge">Cap. ${b.capNum}</span>`
+            : '';
+          const btnAplicar = (b.capNum !== null && b.instruccio)
+            ? `<button class="btn btn-secondary" style="font-size:.78rem;padding:5px 12px;flex-shrink:0;" onclick="aplicarCorreccio(${i})">Aplicar →</button>`
+            : '';
+          return `<div class="revisio-problema">
+            <div class="revisio-problema-header">
+              <span class="revisio-label">Problema ${i + 1}</span>
+              ${capBadge}
+            </div>
+            <div class="revisio-desc">${escHtml(b.problema)}</div>
+            ${b.instruccio ? `<div class="revisio-correccio">
+              <span class="revisio-correccio-text">${escHtml(b.instruccio)}</span>
+              ${btnAplicar}
+            </div>` : ''}
+          </div>`;
+        }).join('')}`;
+    }
   }
 
-  // Guardar correccions per accés per índex des d'onclick
-  _revisioCorreccions = blocs.map(b => ({ capIdx: b.capNum ? b.capNum - 1 : null, instruccio: b.instruccio }));
-
-  const totalLabel = `${blocs.length} problema${blocs.length !== 1 ? 'es' : ''} detectat${blocs.length !== 1 ? 's' : ''}`;
-  container.innerHTML = `
-    <p style="font-size:.8rem;color:var(--text2);margin-bottom:14px;">${escHtml(totalLabel)}</p>
-    ${blocs.map((b, i) => {
-      const capBadge = b.capNum
-        ? `<span class="revisio-cap-badge">Cap. ${b.capNum}</span>`
-        : '';
-      const btnAplicar = (b.capNum !== null && b.instruccio)
-        ? `<button class="btn btn-secondary" style="font-size:.78rem;padding:5px 12px;flex-shrink:0;" onclick="aplicarCorreccio(${i})">Aplicar →</button>`
-        : '';
-      return `<div class="revisio-problema">
-        <div class="revisio-problema-header">
-          <span class="revisio-label">Problema ${i + 1}</span>
-          ${capBadge}
-        </div>
-        <div class="revisio-desc">${escHtml(b.problema)}</div>
-        ${b.instruccio ? `<div class="revisio-correccio">
-          <span class="revisio-correccio-text">${escHtml(b.instruccio)}</span>
-          ${btnAplicar}
-        </div>` : ''}
-      </div>`;
-    }).join('')}`;
+  if (isAutoMode) {
+    if (blocs.length === 0 || intentsRevisio >= 2) {
+      if (intentsRevisio >= 2 && blocs.length > 0) {
+        toast('Límit de revisions assolit, forçant avanç');
+      }
+      intentsRevisio = 0;
+      ESTAT._capActual++;
+      if (ESTAT._capActual < ESTAT.outline.length) {
+        generarCapitolActual();
+      } else {
+        iniciarFase17();
+      }
+    } else {
+      intentsRevisio++;
+      aplicarCorreccio(0);
+      millorarCapitolActual();
+    }
+  }
 }
 
 // ─── Aplicar una correcció al capítol afectat ───────────────
