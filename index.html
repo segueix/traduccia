@@ -444,6 +444,8 @@
     <div class="step-pill" data-step="7">Món</div>
     <div class="step-arrow">›</div>
     <div class="step-pill" data-step="8">Personatges</div>
+    <div class="step-arrow">›</div>
+    <div class="step-pill" data-step="9">Estructura</div>
   </div>
 </div>
 
@@ -604,6 +606,19 @@
   </div>
 </div>
 
+<!-- FASE 9: Estructura narrativa -->
+<div class="card hidden" id="fase-9">
+  <h2><span class="icon">🏗️</span> Estructura narrativa</h2>
+  <div class="loader-wrap" id="loader-9">
+    <div class="spinner"></div>
+    <span>Generant opcions d'estructura…</span>
+  </div>
+  <div id="llista-estructura" class="premise-list"></div>
+  <div class="btn-row">
+    <button class="btn btn-primary hidden" id="btn-fase9" onclick="confirmarEstructura()">📋 Mapa de capítols</button>
+  </div>
+</div>
+
 <!-- FASE 8: Elenc de personatges -->
 <div class="card hidden" id="fase-8">
   <h2><span class="icon">👥</span> Elenc de personatges</h2>
@@ -727,7 +742,11 @@ const ESTAT = {
   // Worldbuilding
   worldbuilding:            null,
   // Elenc de personatges
-  elencPersonatges:         []
+  elencPersonatges:         [],
+  // Estructura narrativa
+  _llistaEstructures:       [],
+  _idxEstructura:           null,
+  estructuraTriada:         ''
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -1289,8 +1308,104 @@ function confirmarElenc() {
     return item ? item.dataset.text : '';
   }).filter(t => t.length > 0);
 
-  toast('Elenc confirmat amb ' + n + ' personatges.');
-  // Placeholder per a la fase 9
+  iniciarFase9();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FASE 8 → FASE 9: Estructura narrativa
+// ═══════════════════════════════════════════════════════════
+function iniciarFase9() {
+  ESTAT.fase = 9;
+  updateProgress(9);
+  showCard('fase-9');
+  document.getElementById('llista-estructura').innerHTML = '';
+  document.getElementById('btn-fase9').classList.add('hidden');
+  showLoader(9);
+
+  google.script.run
+    .withSuccessHandler(res => {
+      ESTAT.history = res.history;
+      hideLoader(9);
+      renderLlistaEstructura(res.response);
+    })
+    .withFailureHandler(err => { hideLoader(9); toast('Error: ' + err.message); })
+    .fase9_estructura(ESTAT.conteText, ESTAT.worldbuilding, ESTAT.elencPersonatges, ESTAT.tematica, ESTAT.estil.desc, ESTAT.history, USER_CONFIG);
+}
+
+function renderLlistaEstructura(text) {
+  const wrap = document.getElementById('llista-estructura');
+
+  // Agrupar línies en blocs per cada opció numerada
+  const blocs = [];
+  let current = [];
+  text.split('\n').forEach(line => {
+    if (/^\d+\./.test(line.trim()) && current.length > 0) {
+      blocs.push(current.join('\n'));
+      current = [line];
+    } else {
+      current.push(line);
+    }
+  });
+  if (current.length > 0) blocs.push(current.join('\n'));
+
+  const validBlocs = blocs.filter(b => /^\d+\./.test(b.trim()));
+
+  if (validBlocs.length === 0) {
+    wrap.innerHTML = `<pre style="white-space:pre-wrap;font-size:.9rem;">${escHtml(text)}</pre>`;
+    showBtn('btn-fase9');
+    return;
+  }
+
+  ESTAT._llistaEstructures = validBlocs.map(b =>
+    b.replace(/^\d+\.\s*/, '').replace(/\s*\(Recomanat\)\s*/i, '').trim()
+  );
+  ESTAT._idxEstructura = null;
+
+  let autoIdx = null;
+  wrap.innerHTML = validBlocs.map((bloc, i) => {
+    const esRecomanat = /\(Recomanat\)/i.test(bloc);
+    const textNet     = bloc.replace(/^\d+\.\s*/, '').replace(/\s*\(Recomanat\)\s*/i, '').trim();
+    if (esRecomanat) autoIdx = i;
+
+    const lines     = textNet.split('\n').filter(l => l.trim());
+    const titolLnia = lines[0] || '';
+    const detalls   = lines.slice(1);
+
+    const badge     = esRecomanat ? `<span class="badge-recomanat">Recomanat</span>` : '';
+    const titolHtml = escHtml(titolLnia).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    const detallsHtml = detalls.map(l =>
+      `<span style="display:block;color:var(--text2);font-size:.85rem;margin-top:5px;line-height:1.5;">${escHtml(l.trim())}</span>`
+    ).join('');
+
+    return `<div class="premise-item" id="llista-estructura-item-${i}" onclick="triarItem('llista-estructura','_idxEstructura',${i},this)">
+      <input type="radio" name="llista-estructura-radio" id="llista-estructura-r-${i}">
+      <label for="llista-estructura-r-${i}" style="width:100%;">${badge}${titolHtml}${detallsHtml}</label>
+    </div>`;
+  }).join('');
+
+  if (autoIdx !== null) {
+    const el = document.getElementById(`llista-estructura-item-${autoIdx}`);
+    if (el) {
+      el.classList.add('chosen');
+      el.querySelector('input').checked = true;
+      ESTAT._idxEstructura = autoIdx;
+    }
+  }
+  showBtn('btn-fase9');
+  setTimeout(() => {
+    document.getElementById('fase-9').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+function confirmarEstructura() {
+  const idx = ESTAT._idxEstructura;
+  if (idx === null || idx === undefined || !ESTAT._llistaEstructures[idx]) {
+    toast("Tria una estructura primer.");
+    return;
+  }
+  ESTAT.estructuraTriada = ESTAT._llistaEstructures[idx];
+  toast('Estructura confirmada. Mapa de capítols en construcció…');
+  // Placeholder per a la fase 10
 }
 </script>
 </body>

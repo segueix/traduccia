@@ -497,6 +497,58 @@ function fase8_elenc(conteActual, worldbuilding, tematica, estilDesc, history, u
   return { response, history: newHistory };
 }
 
+// ─── Context compacte (reutilitzable per a Fase 9+) ─────────
+// Genera un resum de ~600 paraules màxim amb tot el decidit.
+// Evita enviar textos llargs bruts al LLM: comprimeix worldbuilding
+// i elenc a 1 línia per element/personatge.
+function comprimirContext(tematica, estilDesc, worldbuilding, elencPersonatges) {
+  const parts = [];
+
+  parts.push(`GÈNERE: ${tematica || '—'}`);
+  parts.push(`ESTIL: ${estilDesc || '—'}`);
+
+  if (elencPersonatges && elencPersonatges.length > 0) {
+    parts.push('\nPERSONATGES:');
+    elencPersonatges.forEach(function(p) {
+      var nomM = p.match(/\*\*(.+?)\*\*/);
+      var rolM = p.match(/Rol:\s*([^|]+)/);
+      var arcM = p.match(/Arc:\s*([^|]+)/);
+      var nom  = nomM ? nomM[1].trim() : p.substring(0, 25).trim();
+      var rol  = rolM ? rolM[1].trim().substring(0, 70) : '—';
+      var arc  = arcM ? arcM[1].trim().substring(0, 80) : '—';
+      parts.push('• ' + nom + ' — ' + rol + ' | Arc: ' + arc);
+    });
+  }
+
+  if (worldbuilding && worldbuilding.trim()) {
+    parts.push('\nMÓN:');
+    worldbuilding.split(/\n\n+/).filter(function(b) { return b.trim(); }).forEach(function(bloc) {
+      var linies = bloc.trim().split('\n');
+      var titol  = linies[0].replace(/\*\*/g, '').trim();
+      var desc   = (linies[1] || '').trim().substring(0, 100);
+      if (titol) parts.push('• ' + titol + (desc ? ': ' + desc : ''));
+    });
+  }
+
+  return parts.join('\n');
+}
+
+// ─── FASE 9: Estructura narrativa en actes ───────────────────
+function fase9_estructura(conteActual, worldbuilding, elencPersonatges, tematica, estilDesc, history, userConfig) {
+  const ctx = comprimirContext(tematica, estilDesc, worldbuilding, elencPersonatges);
+
+  const msgs = [
+    ...history,
+    {
+      role: 'user',
+      content: `Tenim definits el món i l'elenc de la novel·la. Aquí el resum:\n\n${ctx}\n\n---\nGenera 4 opcions d'estructura narrativa per a la novel·la. Cada opció ha de ser diferent en forma i filosofia (per exemple: estructura de 3 actes clàssica, estructura de 4 actes, estructura circular, estructura de trames paral·leles).\n\nPer a cada opció inclou:\n- Nom de l'estructura\n- Resum de cada acte en 2 línies: quins esdeveniments, quin personatge lidera, quin canvi es produeix\n- 2-3 punts de gir principals que articulen la tensió\n- 1 línia sobre com encaixa amb els personatges i el món definits\n\nMarca amb (Recomanat) l'opció que millor aprofiti les tensions dels personatges i el potencial del món.\n\nFormat ESTRICTE (4 opcions numerades, res més, sense cap introducció):\n1. **[Nom de l'estructura]**\nActe I: [2 línies]\nActe II: [2 línies]\nActe III: [2 línies]\nPunts de gir: [2-3 punts separats per " / "]\nEncaix: [1 línia]\n\n2. **[Nom de l'estructura]**\n...\n\n3. ...\n\n4. ... (Recomanat)`
+    }
+  ];
+  const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens: 3000 }));
+  const newHistory = [...msgs, { role: 'assistant', content: response }];
+  return { response, history: newHistory };
+}
+
 // ─── Export a Google Doc (format literari) ──────────────────
 function exportarADoc(titol, contingut) {
   const doc  = DocumentApp.create(titol || 'Conte');
