@@ -332,11 +332,14 @@
   <p style="color:var(--text2);margin-bottom:8px;">Configura el model d'IA abans de començar.</p>
 
   <label class="field-label" for="config-provider">Proveïdor</label>
-  <select id="config-provider">
+  <select id="config-provider" onchange="actualitzarModelDefault()">
     <option value="anthropic">Anthropic (Claude)</option>
     <option value="openai">OpenAI (GPT-4o)</option>
     <option value="gemini">Google (Gemini 1.5)</option>
   </select>
+
+  <label class="field-label" for="config-model">Model</label>
+  <input type="text" id="config-model" placeholder="claude-opus-4-1" value="claude-opus-4-1">
 
   <label class="field-label" for="config-apikey">API Key</label>
   <input type="password" id="config-apikey" placeholder="Enganxa aquí la teva API key">
@@ -559,18 +562,29 @@ const ESTAT = {
 // ═══════════════════════════════════════════════════════════
 //  CONFIGURACIÓ
 // ═══════════════════════════════════════════════════════════
+const MODEL_DEFAULTS = {
+  anthropic: 'claude-opus-4-1',
+  openai:    'gpt-4o',
+  gemini:    'gemini-1.5-pro'
+};
+
+function actualitzarModelDefault() {
+  const provider = document.getElementById('config-provider').value;
+  const input    = document.getElementById('config-model');
+  const def      = MODEL_DEFAULTS[provider] || '';
+  input.placeholder = def;
+  input.value       = def;
+}
+
 function guardarIComencar() {
   const provider = document.getElementById('config-provider').value;
+  const model    = document.getElementById('config-model').value.trim();
   const apiKey   = document.getElementById('config-apikey').value.trim();
   if (!provider) { toast('Selecciona un proveïdor.'); return; }
+  if (!model)    { toast('Introdueix el nom del model.'); return; }
   if (!apiKey)   { toast("Introdueix una API key."); return; }
 
-  const modelByProvider = {
-    openai:    'gpt-4o',
-    anthropic: 'claude-opus-4-1',
-    gemini:    'gemini-1.5-pro'
-  };
-  USER_CONFIG = { provider, apiKey, model: modelByProvider[provider] || '' };
+  USER_CONFIG = { provider, apiKey, model };
 
   hideCard('card-config');
   document.getElementById('progress-wrap').classList.remove('hidden');
