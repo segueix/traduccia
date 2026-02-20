@@ -213,6 +213,22 @@
   .premise-item input[type=radio] { margin-top: 2px; accent-color: var(--accent); flex-shrink: 0; }
   .premise-item label { cursor: pointer; line-height: 1.5; font-size: .95rem; }
 
+  /* ── Badge Recomanat ── */
+  .badge-recomanat {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    font-size: .68rem;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 99px;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    margin-right: 8px;
+    vertical-align: middle;
+    flex-shrink: 0;
+  }
+
   /* ── Loader ── */
   .loader-wrap {
     display: none;
@@ -360,7 +376,9 @@
     <div class="step-arrow">›</div>
     <div class="step-pill" data-step="3">Protagonista</div>
     <div class="step-arrow">›</div>
-    <div class="step-pill" data-step="4">Escriptura</div>
+    <div class="step-pill" data-step="4">Final</div>
+    <div class="step-arrow">›</div>
+    <div class="step-pill" data-step="5">Escriptura</div>
   </div>
 </div>
 
@@ -465,16 +483,29 @@
   </div>
   <div id="llista-personatges" class="premise-list"></div>
   <div class="btn-row">
-    <button class="btn btn-primary hidden" id="btn-fase3" onclick="iniciarEscriptura()">✍️ Escriure el conte</button>
+    <button class="btn btn-primary hidden" id="btn-fase3" onclick="iniciarFase4()">🏁 Triar el final</button>
   </div>
 </div>
 
-<!-- FASE 4: Escriptura -->
+<!-- FASE 4: Finals -->
 <div class="card hidden" id="fase-4">
-  <h2><span class="icon">✍️</span> El teu conte</h2>
+  <h2><span class="icon">🏁</span> Tria el final</h2>
   <div class="loader-wrap" id="loader-4">
     <div class="spinner"></div>
-    <span id="loader-4-text">Escrivint el conte…</span>
+    <span>Generant 5 finals possibles…</span>
+  </div>
+  <div id="llista-finals" class="premise-list"></div>
+  <div class="btn-row">
+    <button class="btn btn-primary hidden" id="btn-fase4" onclick="iniciarEscriptura()">✍️ Escriure el conte</button>
+  </div>
+</div>
+
+<!-- FASE 5: Escriptura -->
+<div class="card hidden" id="fase-5">
+  <h2><span class="icon">✍️</span> El teu conte</h2>
+  <div class="loader-wrap" id="loader-5">
+    <div class="spinner"></div>
+    <span id="loader-5-text">Escrivint el conte…</span>
   </div>
   <div id="conte-wrap" class="hidden">
     <div class="conte-reader" id="conte-cos"></div>
@@ -493,6 +524,7 @@
     <div id="export-link-wrap" class="hidden" style="margin-top:14px;"></div>
   </div>
 </div>
+
 
 <div id="toast"></div>
 
@@ -556,6 +588,9 @@ const ESTAT = {
   _llistaProtagonistes: [],
   _idxProtagonista:     null,
   protagonistaTriat:    '',
+  _llistaFinals:        [],
+  _idxFinal:            null,
+  finalTriat:           '',
   conteText:            ''
 };
 
@@ -617,30 +652,56 @@ function iniciarFase1() {
     .fase1_premisses(sel, [], USER_CONFIG);
 }
 
-function renderPremisses(text) {
-  const wrap  = document.getElementById('llista-premisses');
+// ─── Render genèric amb badge "Recomanat" ───────────────────
+function renderLlistaAmbRecomanat(text, wrapId, listaKey, idxKey, btnId) {
+  const wrap  = document.getElementById(wrapId);
   const lines = text.split('\n').filter(l => /^\d+\./.test(l.trim()));
   if (lines.length === 0) {
     wrap.innerHTML = `<pre style="white-space:pre-wrap;font-size:.9rem;">${escHtml(text)}</pre>`;
-  } else {
-    wrap.innerHTML = lines.map((l, i) => {
-      const txt = l.replace(/^\d+\.\s*/, '').trim();
-      return `<div class="premise-item" id="prem-${i}" onclick="triarPremissa(${i}, this)">
-        <input type="radio" name="prem" id="r-prem-${i}">
-        <label for="r-prem-${i}">${escHtml(txt)}</label>
-      </div>`;
-    }).join('');
+    ESTAT[listaKey] = [];
+    return;
   }
-  ESTAT._premissaLista = lines.map(l => l.replace(/^\d+\.\s*/, '').trim());
-  showBtn('btn-fase1');
+  const list = lines.map(l => l.replace(/^\d+\.\s*/, '').trim());
+  // Guardar sense "(Recomanat)" per usar als prompts
+  ESTAT[listaKey] = list.map(item => item.replace(/\s*\(Recomanat\)\s*/i, '').trim());
+  ESTAT[idxKey]   = null;
+
+  let autoIdx = null;
+  wrap.innerHTML = list.map((item, i) => {
+    const esRecomanat = /\(Recomanat\)/i.test(item);
+    const textNet     = item.replace(/\s*\(Recomanat\)\s*/i, '').trim();
+    if (esRecomanat) autoIdx = i;
+    const badge = esRecomanat ? `<span class="badge-recomanat">Recomanat</span>` : '';
+    return `<div class="premise-item" id="${wrapId}-item-${i}" onclick="triarItem('${wrapId}','${idxKey}',${i},this)">
+      <input type="radio" name="${wrapId}-radio" id="${wrapId}-r-${i}">
+      <label for="${wrapId}-r-${i}">${badge}${escHtml(textNet)}</label>
+    </div>`;
+  }).join('');
+
+  // Auto-seleccionar el recomanat
+  if (autoIdx !== null) {
+    const el = document.getElementById(`${wrapId}-item-${autoIdx}`);
+    if (el) {
+      el.classList.add('chosen');
+      el.querySelector('input').checked = true;
+      ESTAT[idxKey] = autoIdx;
+    }
+  }
+  showBtn(btnId);
 }
 
-function triarPremissa(idx, el) {
-  document.querySelectorAll('#llista-premisses .premise-item').forEach(e => e.classList.remove('chosen'));
+function triarItem(wrapId, idxKey, idx, el) {
+  document.querySelectorAll(`#${wrapId} .premise-item`).forEach(e => e.classList.remove('chosen'));
   el.classList.add('chosen');
   el.querySelector('input').checked = true;
-  ESTAT._premissaIdx = idx;
+  ESTAT[idxKey] = idx;
 }
+
+function renderPremisses(text) {
+  renderLlistaAmbRecomanat(text, 'llista-premisses', '_premissaLista', '_premissaIdx', 'btn-fase1');
+}
+
+function triarPremissa(idx, el) { triarItem('llista-premisses', '_premissaIdx', idx, el); }
 
 // ═══════════════════════════════════════════════════════════
 //  FASE 1 → FASE 2: Estil (sense API)
@@ -695,36 +756,15 @@ function iniciarFase3() {
 }
 
 function renderProtagonistes(text) {
-  const wrap  = document.getElementById('llista-personatges');
-  const lines = text.split('\n').filter(l => /^\d+\./.test(l.trim()));
-  if (lines.length === 0) {
-    wrap.innerHTML = `<pre style="white-space:pre-wrap;font-size:.9rem;">${escHtml(text)}</pre>`;
-    ESTAT._llistaProtagonistes = [];
-  } else {
-    const list = lines.map(l => l.replace(/^\d+\.\s*/, '').trim());
-    ESTAT._llistaProtagonistes = list;
-    ESTAT._idxProtagonista     = null;
-    wrap.innerHTML = list.map((item, i) => `
-      <div class="premise-item" id="prot-item-${i}" onclick="triarProtagonista(${i}, this)">
-        <input type="radio" name="prot-radio" id="prot-r-${i}">
-        <label for="prot-r-${i}">${escHtml(item)}</label>
-      </div>
-    `).join('');
-  }
-  showBtn('btn-fase3');
+  renderLlistaAmbRecomanat(text, 'llista-personatges', '_llistaProtagonistes', '_idxProtagonista', 'btn-fase3');
 }
 
-function triarProtagonista(idx, el) {
-  document.querySelectorAll('#llista-personatges .premise-item').forEach(e => e.classList.remove('chosen'));
-  el.classList.add('chosen');
-  el.querySelector('input').checked = true;
-  ESTAT._idxProtagonista = idx;
-}
+function triarProtagonista(idx, el) { triarItem('llista-personatges', '_idxProtagonista', idx, el); }
 
 // ═══════════════════════════════════════════════════════════
-//  FASE 3 → FASE 4: Escriptura
+//  FASE 3 → FASE 4: Finals
 // ═══════════════════════════════════════════════════════════
-function iniciarEscriptura() {
+function iniciarFase4() {
   const idx = ESTAT._idxProtagonista;
   if (idx === null || idx === undefined || !ESTAT._llistaProtagonistes[idx]) {
     toast('Tria un protagonista primer.');
@@ -734,21 +774,47 @@ function iniciarEscriptura() {
   ESTAT.fase = 4;
   updateProgress(4);
   showCard('fase-4');
-  hideCard('conte-wrap');
   showLoader(4);
-  document.getElementById('loader-4-text').textContent = 'Escrivint el conte…';
+
+  google.script.run
+    .withSuccessHandler(res => {
+      ESTAT.history = res.history;
+      hideLoader(4);
+      renderLlistaAmbRecomanat(res.response, 'llista-finals', '_llistaFinals', '_idxFinal', 'btn-fase4');
+    })
+    .withFailureHandler(err => { hideLoader(4); toast('Error: ' + err.message); })
+    .fase4_finals(ESTAT.protagonistaTriat, ESTAT.estil.desc, ESTAT.history, USER_CONFIG);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FASE 4 → FASE 5: Escriptura
+// ═══════════════════════════════════════════════════════════
+function iniciarEscriptura() {
+  const idx = ESTAT._idxFinal;
+  if (idx === null || idx === undefined || !ESTAT._llistaFinals[idx]) {
+    toast('Tria un final primer.');
+    return;
+  }
+  ESTAT.finalTriat = ESTAT._llistaFinals[idx];
+  ESTAT.fase = 5;
+  updateProgress(5);
+  showCard('fase-5');
+  hideCard('conte-wrap');
+  showLoader(5);
+  document.getElementById('loader-5-text').textContent = 'Escrivint el conte…';
   document.getElementById('export-link-wrap').classList.add('hidden');
 
   google.script.run
     .withSuccessHandler(res => {
       ESTAT.history   = res.history;
       ESTAT.conteText = res.response;
-      hideLoader(4);
+      hideLoader(5);
       mostrarConte(res.response);
     })
-    .withFailureHandler(err => { hideLoader(4); toast('Error: ' + err.message); })
+    .withFailureHandler(err => { hideLoader(5); toast('Error: ' + err.message); })
     .escriureConte(
       ESTAT.protagonistaTriat,
+      ESTAT.finalTriat,
       ESTAT.estil.desc,
       ESTAT.estil.paraules,
       ESTAT.history,
@@ -757,8 +823,7 @@ function iniciarEscriptura() {
 }
 
 function mostrarConte(text) {
-  const cos = document.getElementById('conte-cos');
-  // Formatar: cada paràgraf en un <p>
+  const cos  = document.getElementById('conte-cos');
   const pars = text.split(/\n\n+/).filter(p => p.trim().length > 0);
   cos.innerHTML = pars.map(p => `<p>${escHtml(p.trim())}</p>`).join('');
 
@@ -766,9 +831,8 @@ function mostrarConte(text) {
   document.getElementById('conte-wordcount').textContent = `${wc.toLocaleString('ca')} paraules`;
 
   showCard('conte-wrap');
-  // Scroll suau fins al conte
   setTimeout(() => {
-    document.getElementById('fase-4').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('fase-5').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 100);
 }
 
@@ -777,22 +841,22 @@ function mostrarConte(text) {
 // ═══════════════════════════════════════════════════════════
 function regenerarConte() {
   if (!confirm('Vols regenerar el conte? El text actual es perdrà.')) return;
-  // Eliminar els últims 2 missatges (user + assistant de l'escriptura)
   ESTAT.history = ESTAT.history.slice(0, -2);
   hideCard('conte-wrap');
-  showLoader(4);
-  document.getElementById('loader-4-text').textContent = 'Regenerant el conte…';
+  showLoader(5);
+  document.getElementById('loader-5-text').textContent = 'Regenerant el conte…';
 
   google.script.run
     .withSuccessHandler(res => {
       ESTAT.history   = res.history;
       ESTAT.conteText = res.response;
-      hideLoader(4);
+      hideLoader(5);
       mostrarConte(res.response);
     })
-    .withFailureHandler(err => { hideLoader(4); toast('Error: ' + err.message); })
+    .withFailureHandler(err => { hideLoader(5); toast('Error: ' + err.message); })
     .escriureConte(
       ESTAT.protagonistaTriat,
+      ESTAT.finalTriat,
       ESTAT.estil.desc,
       ESTAT.estil.paraules,
       ESTAT.history,
@@ -806,19 +870,19 @@ function millorarConte() {
   if (!ESTAT.conteText) { toast('Primer genera el conte.'); return; }
 
   hideCard('conte-wrap');
-  showLoader(4);
-  document.getElementById('loader-4-text').textContent = 'Aplicant la millora…';
+  showLoader(5);
+  document.getElementById('loader-5-text').textContent = 'Aplicant la millora…';
 
   google.script.run
     .withSuccessHandler(res => {
       ESTAT.history   = res.history;
       ESTAT.conteText = res.response;
-      hideLoader(4);
+      hideLoader(5);
       document.getElementById('millora-input').value = '';
       mostrarConte(res.response);
       toast('Millora aplicada.');
     })
-    .withFailureHandler(err => { hideLoader(4); toast('Error: ' + err.message); })
+    .withFailureHandler(err => { hideLoader(5); toast('Error: ' + err.message); })
     .millorarConte(instruccio, ESTAT.conteText, ESTAT.estil.desc, ESTAT.history, USER_CONFIG);
 }
 

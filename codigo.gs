@@ -194,6 +194,8 @@ Cada premissa ha de:
 - Suggerir potencial de twist o revelació inesperada al final
 - Ser concreta, sorprenent, no òbvia ni genèrica
 
+Afegeix (Recomanat) al final de la premissa que consideris més potent literàriament.
+
 Format ESTRICTE (res més, sense cap introducció):
 1. [premissa]
 2. [premissa]
@@ -207,7 +209,7 @@ Format ESTRICTE (res més, sense cap introducció):
 10. [premissa]`
   };
   const msgs       = [...history, userMsg];
-  const response   = callLLM(msgs, SYSTEM_DEFAULT, userConfig);
+  const response   = callLLM(msgs, SYSTEM_DEFAULT, Object.assign({}, userConfig, { maxTokens: 1800 }));
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
 }
@@ -226,7 +228,9 @@ function fase3_personatges(premissaTriada, estilDesc, history, userConfig) {
     },
     {
       role: 'user',
-      content: `Genera 5 protagonistes possibles per a aquest conte. Cada un ha de tenir veu pròpia i tensió interna que el faci memorables.
+      content: `Genera 5 protagonistes possibles per a aquest conte. Cada un ha de tenir veu pròpia i tensió interna que el faci memorable.
+
+Afegeix (Recomanat) al final del protagonista que millor encaixi amb la premissa i l'estil triat.
 
 Format ESTRICTE (5 opcions, res més):
 1. **[Nom, edat]** | Desig: [el que vol conscientment] | Temor: [el que l'aterroritza o amaga] | Contradicció: [la tensió interna que el fa humà] | Veu: [tret narratiu o tic que el fa distintiu]
@@ -241,16 +245,49 @@ Format ESTRICTE (5 opcions, res més):
   return { response, history: newHistory };
 }
 
-// ─── ESCRIPTURA: Conte complet en un sol bloc ───────────────
-function escriureConte(protagonistaTriat, estilDesc, paraules, history, userConfig) {
-  const paraulesNum = parseInt(paraules) || 1500;
+// ─── FASE 4: 5 finals possibles ─────────────────────────────
+function fase4_finals(protagonistaTriat, estilDesc, history, userConfig) {
   const msgs = [
     ...history,
     { role: 'user',      content: `He triat el protagonista: "${protagonistaTriat}".` },
-    { role: 'assistant', content: 'Perfecte. Ara escric el conte complet amb màxima qualitat literària.' },
+    { role: 'assistant', content: 'Perfecte. Amb totes les decisions preses, proposo possibles finals per al conte.' },
+    {
+      role: 'user',
+      content: `Genera 5 finals possibles per a aquest conte, coherents amb la premissa, l'estil i el protagonista triats.
+
+Cada final ha de:
+- Ser diferent en to i resolució dels altres
+- Tenir impacte emocional genuí
+- Ser inevitable en retrospectiva però imprevist durant la lectura
+- Explicar-se en 2-3 frases que capturin l'essència sense revelar massa
+
+Afegeix (Recomanat) al final de l'opció que consideris més poderosa literàriament.
+
+Format ESTRICTE (5 opcions, res més):
+1. [descripció del final en 2-3 frases]
+2. [descripció del final en 2-3 frases]
+3. [descripció del final en 2-3 frases]
+4. [descripció del final en 2-3 frases]
+5. [descripció del final en 2-3 frases]`
+    }
+  ];
+  const response   = callLLM(msgs, SYSTEM_DEFAULT, Object.assign({}, userConfig, { maxTokens: 1800 }));
+  const newHistory = [...msgs, { role: 'assistant', content: response }];
+  return { response, history: newHistory };
+}
+
+// ─── ESCRIPTURA: Conte complet en un sol bloc ───────────────
+function escriureConte(protagonistaTriat, finalTriat, estilDesc, paraules, history, userConfig) {
+  const paraulesNum = parseInt(paraules) || 1500;
+  const msgs = [
+    ...history,
+    { role: 'user',      content: `He triat el final: "${finalTriat}".` },
+    { role: 'assistant', content: 'Perfecte. Ara escric el conte complet respectant el final triat i amb màxima qualitat literària.' },
     {
       role: 'user',
       content: `Escriu el CONTE COMPLET. Extensió aproximada: ${paraulesNum} paraules. Estil: ${estilDesc}.
+
+El conte ha de culminar amb el final triat: "${finalTriat}"
 
 ═══ REQUISITS DE QUALITAT MÀXIMA ═══
 
@@ -271,8 +308,8 @@ ESTIL:
 → Diàlegs que revelen caràcter i avancen el conflicte, mai que expliquen ni informen.
 
 FINAL:
-→ L'última frase ha de ressonar, sorprendre o tancar un cercle obert al principi.
-→ El desenllaç ha de ser inevitable en retrospectiva però imprevist durant la lectura.
+→ El desenllaç ha de concloure tal com s'ha triat, però executat amb precisió literària.
+→ L'última frase ha de ressonar i tancar un cercle obert al principi.
 
 Escriu directament el conte, sense títol, sense cap introducció ni nota de l'autor.`
     }
