@@ -762,7 +762,7 @@ function analitzarAmbEditor(userPrompt, userConfig) {
 // capitolsData: array de {num, outlineText, text} per als capítols generats.
 // biblia:       string (bíblia de consistència compilada).
 // userConfig:   configuració del LLM de l'usuari.
-function fase15_revisioCoherencia(capitolsData, biblia, userConfig) {
+function fase15_revisioCoherencia(capitolsData, biblia, userConfig, fetsCanonicsText) {
   var d = capitolsData || [];
 
   // Comprimir cada capítol: primeres i últimes 200 paraules + outline
@@ -779,8 +779,12 @@ function fase15_revisioCoherencia(capitolsData, biblia, userConfig) {
     ? '=== BÍBLIA DE REFERÈNCIA ===\n' + biblia.substring(0, 1200) + '\n\n'
     : '';
 
+  var fetsCanonicsRef = fetsCanonicsText && String(fetsCanonicsText).trim()
+    ? '=== FETS CANÒNICS RECENTS ===\n' + String(fetsCanonicsText).substring(0, 2000) + '\n\n'
+    : '';
+
   var userPrompt =
-    bibliaRef + resumCapitols + '\n\n---\n' +
+    bibliaRef + fetsCanonicsRef + resumCapitols + '\n\n---\n' +
     'Analitza la coherència dels ' + d.length + ' capítols anteriors. Identifica:\n' +
     '1. Contradiccions factuals (noms, dates, llocs, fets que canvien)\n' +
     '2. Canvis de to o veu narrativa injustificats\n' +
@@ -800,9 +804,18 @@ function fase15_revisioCoherencia(capitolsData, biblia, userConfig) {
 // ─── FASE 14: Escriure un capítol (patró anti-timeout, 2 parts) ──
 // partNum:      1 (primera meitat) o 2 (segona meitat)
 // historialPart: null per Part 1; historial retornat per Part 1 per a Part 2
-function escriureCapitol(partNum, numCapitol, totalCapitols, biblia, outlineCapitol, textCapAnterior, estilDesc, userConfig, tematica, historialPart) {
+function escriureCapitol(partNum, numCapitol, totalCapitols, biblia, outlineCapitol, textCapAnterior, estilDesc, userConfig, tematica, historialPart, fetsCanonicsText) {
+  var capitolsRestants = Math.max(0, (totalCapitols || 0) - (numCapitol || 0));
   var systemForCap = getSystemPrompt(tematica) +
     '\n\n=== BÍBLIA DE LA NOVEL·LA ===\n' + (biblia || '');
+
+  if (capitolsRestants > 3) {
+    systemForCap += '\n\n[ALERTA DE RITME: Estàs a la fase de desenvolupament. ESTÀ PROHIBIT resoldre el conflicte principal, revelar els grans secrets o matar l\'antagonista en aquest capítol. Mantingues la tensió.]';
+  }
+
+  if (fetsCanonicsText && String(fetsCanonicsText).trim()) {
+    systemForCap += '\n\n=== FETS CANÒNICS RECENTS (NO CONTRADIR) ===\n' + String(fetsCanonicsText).substring(0, 2000);
+  }
 
   var contextAnterior = '';
   if (textCapAnterior && textCapAnterior.trim()) {
@@ -870,14 +883,16 @@ function fase12_cronologia(contextComprimit, outline, subtrames, history, userCo
 // ─── FASE 11: Subtrames i fils temàtics ─────────────────────
 // outline: string compacte "Cap. N — Títol" per línia (sense POV ni detalls)
 function fase11_subtrames(contextComprimit, outline, history, userConfig, tematica) {
+  const systemForSubtrames = getSystemPrompt(tematica) +
+    '\n\nINSTRUCCIÓ NARRATIVA OBLIGATÒRIA: TOTES les subtrames han de col·lisionar obligatòriament amb la trama principal cap a l\'Acte III o el clímax. Sempre has d\'incloure el camp "Punt de Convergència" per a cada subtrama.';
   const msgs = [
     ...history,
     {
       role: 'user',
-      content: `Tenim definit el món, els personatges i l'outline de la novel·la:\n\n${contextComprimit}\n\nOUTLINE (capítols):\n${outline}\n\n---\nGenera entre 5 i 7 subtrames per a la novel·la. Cada subtrama ha de:\n- Tenir vida pròpia independent de la trama principal\n- Estar ancorada a capítols concrets de l'outline (inici, complicació i resolució)\n- Associar-se a un fil temàtic de la novel·la (amor, traïció, identitat, poder, etc.)\n- Involucrar personatges de l'elenc que no siguin sempre el protagonista\n\nMarca amb (Recomanat) les 3 o 4 subtrames més necessàries per enriquir la novel·la.\n\nFormat ESTRICTE (una subtrama per línia, res més, sense introducció):\n1. **[Nom de la subtrama]** | Inici: Cap. N | Complicació: Cap. N | Resolució: Cap. N | Tema: [fil temàtic associat]\n2. **[Nom de la subtrama]** | Inici: Cap. N | Complicació: Cap. N | Resolució: Cap. N | Tema: [fil temàtic associat]\n3. ...\n4. ...\n5. ...\n6. ... (Recomanat)\n7. ...`
+      content: `Tenim definit el món, els personatges i l'outline de la novel·la:\n\n${contextComprimit}\n\nOUTLINE (capítols):\n${outline}\n\n---\nGenera entre 5 i 7 subtrames per a la novel·la. Cada subtrama ha de:\n- Tenir vida pròpia independent de la trama principal\n- Estar ancorada a capítols concrets de l'outline (inici, complicació i resolució)\n- Associar-se a un fil temàtic de la novel·la (amor, traïció, identitat, poder, etc.)\n- Involucrar personatges de l'elenc que no siguin sempre el protagonista\n- Col·lisionar obligatòriament amb la trama principal cap a l'Acte III o el clímax\n\nMarca amb (Recomanat) les 3 o 4 subtrames més necessàries per enriquir la novel·la.\n\nFormat ESTRICTE (una subtrama per línia, res més, sense introducció):\n1. **[Nom de la subtrama]** | Inici: Cap. N | Complicació: Cap. N | Resolució: Cap. N | Punt de Convergència: Cap. N (Acte III/Clímax) | Tema: [fil temàtic associat]\n2. **[Nom de la subtrama]** | Inici: Cap. N | Complicació: Cap. N | Resolució: Cap. N | Punt de Convergència: Cap. N (Acte III/Clímax) | Tema: [fil temàtic associat]\n3. ...\n4. ...\n5. ...\n6. ... (Recomanat)\n7. ...`
     }
   ];
-  const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens: 2048 }));
+  const response   = callLLM(msgs, systemForSubtrames, Object.assign({}, userConfig, { maxTokens: 2048 }));
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
 }
