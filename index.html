@@ -918,7 +918,7 @@ function iniciarEscriptura() {
   // Decidir nombre de parts segons la longitud triada
   // 500 paraules → 1 part | 1500 → 2 parts | 3000 → 3 parts
   const p = ESTAT.estil.paraules;
-  ESTAT._totalParts  = p <= 600 ? 1 : p <= 1800 ? 2 : 3;
+  ESTAT._totalParts  = p <= 600 ? 1 : p <= 1800 ? 2 : 4;
   ESTAT._partActual  = 1;
   ESTAT._partsTexts  = [];
   // Snapshot de l'historial ABANS d'escriure → permet regenerar sense reconstruir

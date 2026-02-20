@@ -429,7 +429,7 @@ Continua directament la narració en català, des d'on s'ha aturat el text anter
   }
 
   const msgs      = [...history, { role: 'user', content: userContent }];
-  const maxTokens = Math.min(Math.round(pp * 2.5) + 1500, 6000);
+  const maxTokens = Math.min(Math.round(pp * 4) + 1000, 8192);
   const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens }));
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
