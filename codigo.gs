@@ -906,3 +906,134 @@ function exportarADoc(titol, contingut) {
   doc.saveAndClose();
   return doc.getUrl();
 }
+
+// ─── Export novel·la completa a Google Doc (format novel·la) ──
+function exportarNovela(titol, epigraf, sinopsi, divisioEnParts, outline, capitols) {
+  const doc  = DocumentApp.create(titol || 'Novel·la');
+  const body = doc.getBody();
+  body.clear();
+
+  // ── Portada ───────────────────────────────────────────────
+  const titolPar = body.appendParagraph(titol || 'Novel·la');
+  titolPar.setHeading(DocumentApp.ParagraphHeading.TITLE);
+  titolPar.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+
+  const autorPar = body.appendParagraph('Generat amb Conte IA');
+  autorPar.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+  autorPar.editAsText().setItalic(true);
+  autorPar.setSpacingAfter(24);
+
+  // ── Epígraf ───────────────────────────────────────────────
+  if (epigraf && epigraf.trim()) {
+    body.appendParagraph('');
+    epigraf.trim().split('\n').forEach(function(line) {
+      const ep = body.appendParagraph(line || ' ');
+      ep.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+      ep.editAsText().setItalic(true);
+    });
+    body.appendParagraph('');
+  }
+
+  // ── Parsear divisió en parts ──────────────────────────────
+  // Format esperat: cada línia és una part, indicant rang de capítols
+  // Exemples: "Part I: El principi — Capítols 1–5"  "Llibre 1 (caps. 1-4)"
+  const capParts = {}; // capNum (1-based) -> partTitle
+  if (divisioEnParts && divisioEnParts.trim()) {
+    divisioEnParts.trim().split('\n').filter(function(l) { return l.trim(); })
+      .forEach(function(line) {
+        const m = line.match(/\b(\d+)\s*[-–—]\s*(\d+)\b/);
+        if (m) {
+          const partTitle = line.split(/[:\-–—(]/)[0].trim();
+          for (var c = parseInt(m[1]); c <= parseInt(m[2]); c++) {
+            capParts[c] = partTitle;
+          }
+        }
+      });
+  }
+
+  // ── Índex ─────────────────────────────────────────────────
+  body.appendParagraph('');
+  const idxH = body.appendParagraph('Índex');
+  idxH.setHeading(DocumentApp.ParagraphHeading.HEADING1);
+
+  var lastPartIdx = null;
+  outline.forEach(function(cap, i) {
+    if (!capitols[i]) return;
+    const capNum    = i + 1;
+    const partTitle = capParts[capNum];
+    if (partTitle && partTitle !== lastPartIdx) {
+      lastPartIdx = partTitle;
+      const pLine = body.appendParagraph(partTitle);
+      pLine.setIndentStart(0);
+      pLine.setBold(true);
+    }
+    const titolCap = ((cap.titol || cap.text || '').split('|')[0].trim()) || ('Capítol ' + capNum);
+    const idxLine  = body.appendParagraph('Capítol ' + capNum + ': ' + titolCap);
+    idxLine.setIndentStart(14.17); // ~0.5cm
+  });
+
+  // ── Capítols ──────────────────────────────────────────────
+  var lastPartCap = null;
+  outline.forEach(function(cap, i) {
+    const text = capitols[i];
+    if (!text) return;
+
+    const capNum    = i + 1;
+    const partTitle = capParts[capNum];
+
+    body.appendParagraph('');
+
+    // Encapçalament de part (Heading 1) si canvia
+    if (partTitle && partTitle !== lastPartCap) {
+      lastPartCap = partTitle;
+      const partH = body.appendParagraph(partTitle);
+      partH.setHeading(DocumentApp.ParagraphHeading.HEADING1);
+      partH.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+      body.appendParagraph('');
+    }
+
+    // Encapçalament del capítol (Heading 2)
+    const titolCap = ((cap.titol || cap.text || '').split('|')[0].trim()) || ('Capítol ' + capNum);
+    const capH = body.appendParagraph('Capítol ' + capNum + ': ' + titolCap);
+    capH.setHeading(DocumentApp.ParagraphHeading.HEADING2);
+    body.appendParagraph('');
+
+    // Text literari: interlineat 1.5, sagnat primera línia
+    text.split(/\n\n+/).filter(function(p) { return p.trim().length > 0; })
+      .forEach(function(par, pi) {
+        const p = body.appendParagraph(par.trim());
+        p.setLineSpacing(1.5);
+        if (pi > 0) p.setIndentFirstLine(28.35); // ~1cm
+      });
+  });
+
+  // ── Sinopsi al final ──────────────────────────────────────
+  if (sinopsi && sinopsi.trim()) {
+    body.appendParagraph('');
+    const sinH = body.appendParagraph('Sinopsi');
+    sinH.setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    const sinP = body.appendParagraph(sinopsi.trim());
+    sinP.editAsText().setItalic(true);
+    sinP.setLineSpacing(1.5);
+  }
+
+  // ── Desar i obtenir URL ────────────────────────────────────
+  const docId = doc.getId();
+  doc.saveAndClose();
+  const docUrl = 'https://docs.google.com/document/d/' + docId + '/edit';
+
+  // ── Exportar DOCX ─────────────────────────────────────────
+  var docxUrl = null;
+  try {
+    const blob = DriveApp.getFileById(docId).getAs(MimeType.MICROSOFT_WORD);
+    blob.setName((titol || 'Novel·la') + '.docx');
+    const docxFile = DriveApp.createFile(blob);
+    docxFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    docxUrl = docxFile.getDownloadUrl();
+  } catch (e) {
+    // DOCX export no disponible en aquest entorn
+    docxUrl = null;
+  }
+
+  return { docUrl: docUrl, docxUrl: docxUrl };
+}

@@ -844,6 +844,80 @@
     .cap-sidebar-titol { display: none; }
     .cap-sidebar-num { min-width: auto; font-size: .8rem; }
   }
+
+  /* ── Fase 18: Assemblatge final ── */
+  .fase18-celebracio {
+    text-align: center;
+    font-size: 1.6rem;
+    padding: 10px 0 4px;
+    letter-spacing: .02em;
+  }
+  .fase18-subtitol {
+    text-align: center;
+    color: var(--success);
+    font-size: .95rem;
+    font-weight: 600;
+    margin-bottom: 28px;
+  }
+  .fase18-stats {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin: 22px 0 28px;
+  }
+  .fase18-stat {
+    flex: 1;
+    min-width: 110px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 14px;
+    text-align: center;
+  }
+  .fase18-stat-num {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent2);
+    line-height: 1.1;
+  }
+  .fase18-stat-label {
+    font-size: .78rem;
+    color: var(--text2);
+    margin-top: 5px;
+  }
+  .fase18-export-links {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .fase18-export-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: .95rem;
+    transition: all .2s;
+  }
+  .fase18-export-link:hover {
+    border-color: var(--accent);
+    color: var(--accent2);
+    background: rgba(124,106,247,.07);
+  }
+  #confetti-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+  }
 </style>
 </head>
 <body>
@@ -910,6 +984,8 @@
     <div class="step-pill" data-step="14">Novel·la</div>
     <div class="step-arrow">›</div>
     <div class="step-pill" data-step="17">Paratextos</div>
+    <div class="step-arrow">›</div>
+    <div class="step-pill" data-step="18">Final</div>
   </div>
 </div>
 
@@ -1359,6 +1435,43 @@
       <button class="btn btn-primary"   onclick="assemblarNovela()">📦 Assemblar novel·la</button>
     </div>
     <div id="assemblar-link-wrap" class="hidden" style="margin-top:14px;"></div>
+  </div>
+</div>
+
+<!-- FASE 18: Assemblatge i exportació final -->
+<div class="card hidden" id="fase-18">
+  <canvas id="confetti-canvas"></canvas>
+  <div class="fase18-celebracio">🎉</div>
+  <div class="fase18-subtitol">Novel·la completada!</div>
+  <h2><span class="icon">🏆</span> Assemblatge final</h2>
+
+  <div class="fase18-stats" id="fase18-stats">
+    <div class="fase18-stat">
+      <span class="fase18-stat-num" id="stat-caps">—</span>
+      <div class="fase18-stat-label">Capítols generats</div>
+    </div>
+    <div class="fase18-stat">
+      <span class="fase18-stat-num" id="stat-paraules">—</span>
+      <div class="fase18-stat-label">Paraules totals</div>
+    </div>
+    <div class="fase18-stat" id="stat-titol-wrap">
+      <span class="fase18-stat-num" style="font-size:1rem;word-break:break-word;" id="stat-titol">—</span>
+      <div class="fase18-stat-label">Títol</div>
+    </div>
+  </div>
+
+  <div class="loader-wrap" id="loader-18">
+    <div class="spinner"></div>
+    <span>Generant el document…</span>
+  </div>
+
+  <div id="fase18-links" class="fase18-export-links hidden"></div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" id="btn-exportar-novela" onclick="exportarNovelaDocs()">
+      📄 Generar Google Doc + DOCX
+    </button>
+    <button class="btn btn-secondary" onclick="iniciarFase17()">‹ Tornar a Paratextos</button>
   </div>
 </div>
 
@@ -2898,41 +3011,143 @@ function actualitzarWCSinopsi() {
   wc.style.color = (n >= 80 && n <= 130) ? 'var(--success)' : 'var(--warning)';
 }
 
-// ─── Assemblar la novel·la (Fase 18 pending) ─────────────────
+// ─── Assemblar la novel·la → passar a Fase 18 ─────────────────
 function assemblarNovela() {
   if (ESTAT._titolIdx === null) { toast('Tria primer el títol de la novel·la.'); return; }
+
+  const capsGenerats = ESTAT.capitols.filter(c => c !== null).length;
+  if (capsGenerats === 0) { toast('Genera almenys un capítol a la Fase 14 primer.'); return; }
 
   // Desar l'estat actual dels textareas
   ESTAT.titolNovel     = ESTAT._titolsProposta[ESTAT._titolIdx] || '';
   ESTAT.sinopsi        = document.getElementById('para-sinopsi-ta').value.trim();
   ESTAT.epigraf        = document.getElementById('para-epigraf-ta').value.trim();
-  ESTAT.divisioEnParts = document.getElementById('para-divisio-ta').value.trim();
+  ESTAT.divisioEnParts = (document.getElementById('para-divisio-ta') || {}).value || '';
+  ESTAT.divisioEnParts = ESTAT.divisioEnParts.trim();
 
+  iniciarFase18();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FASE 18: Assemblatge i exportació final
+// ═══════════════════════════════════════════════════════════
+
+// ─── Iniciar Fase 18 ─────────────────────────────────────────
+function iniciarFase18() {
+  ESTAT.fase = 18;
+  updateProgress(18);
+  showCard('fase-18');
+
+  // Estadístiques
   const capsGenerats = ESTAT.capitols.filter(c => c !== null).length;
-  if (capsGenerats === 0) { toast('Genera almenys un capítol a la Fase 14 primer.'); return; }
+  const totalParaules = ESTAT.capitols.reduce((acc, text) => {
+    return acc + (text ? compteParaules(text) : 0);
+  }, 0);
+  const titolCurt = ESTAT.titolNovel
+    ? (ESTAT.titolNovel.length > 20 ? ESTAT.titolNovel.substring(0, 18) + '…' : ESTAT.titolNovel)
+    : '—';
 
-  toast('Assemblant la novel·la…');
+  document.getElementById('stat-caps').textContent     = capsGenerats;
+  document.getElementById('stat-paraules').textContent = totalParaules.toLocaleString('ca');
+  document.getElementById('stat-titol').textContent    = titolCurt;
 
-  // Construir el text complet: epígraf + capítols + sinopsi
-  const parts = [];
-  if (ESTAT.epigraf)   parts.push(ESTAT.epigraf + '\n\n―\n\n');
-  ESTAT.capitols.forEach((text, i) => {
-    if (!text) return;
-    const cap    = ESTAT.outline[i] || { num: i + 1, titol: '', text: '' };
-    const titolC = (cap.titol || cap.text || '').split('|')[0].trim() || ('Capítol ' + (i + 1));
-    parts.push('CAPÍTOL ' + (i + 1) + '\n' + titolC + '\n\n' + text);
-  });
-  const textComplet = parts.join('\n\n―\n\n');
+  // Amagar links i loader de generacions anteriors
+  document.getElementById('fase18-links').classList.add('hidden');
+  document.getElementById('loader-18').classList.remove('visible');
+  document.getElementById('btn-exportar-novela').disabled = false;
+
+  setTimeout(() => {
+    document.getElementById('fase-18').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    llençarConfetti();
+  }, 150);
+}
+
+// ─── Exportar a Google Docs + DOCX ───────────────────────────
+function exportarNovelaDocs() {
+  const btn = document.getElementById('btn-exportar-novela');
+  btn.disabled = true;
+  document.getElementById('loader-18').classList.add('visible');
+  document.getElementById('fase18-links').classList.add('hidden');
 
   google.script.run
-    .withSuccessHandler(function(url) {
-      const wrap = document.getElementById('assemblar-link-wrap');
-      wrap.innerHTML = `<a href="${url}" target="_blank" class="export-link">📖 Obrir la novel·la a Google Docs →</a>`;
-      wrap.classList.remove('hidden');
-      toast('Novel·la assemblada a Google Docs!');
+    .withSuccessHandler(function(res) {
+      document.getElementById('loader-18').classList.remove('visible');
+      btn.disabled = false;
+
+      let html = '';
+      if (res.docUrl) {
+        html += `<a href="${res.docUrl}" target="_blank" class="fase18-export-link">
+          📖 <span>Obrir la novel·la a Google Docs →</span>
+        </a>`;
+      }
+      if (res.docxUrl) {
+        html += `<a href="${res.docxUrl}" target="_blank" class="fase18-export-link">
+          💾 <span>Descarregar DOCX →</span>
+        </a>`;
+      }
+      if (!html) html = '<p style="color:var(--warning);font-size:.9rem;">No s\'ha pogut generar l\'exportació.</p>';
+
+      const linksDiv = document.getElementById('fase18-links');
+      linksDiv.innerHTML = html;
+      linksDiv.classList.remove('hidden');
+      toast('Document generat!');
     })
-    .withFailureHandler(function(err) { toast('Error: ' + err.message); })
-    .exportarADoc(ESTAT.titolNovel || 'Novel·la', textComplet);
+    .withFailureHandler(function(err) {
+      document.getElementById('loader-18').classList.remove('visible');
+      btn.disabled = false;
+      toast('Error en la generació: ' + err.message);
+    })
+    .exportarNovela(
+      ESTAT.titolNovel || 'Novel·la',
+      ESTAT.epigraf        || '',
+      ESTAT.sinopsi        || '',
+      ESTAT.divisioEnParts || '',
+      ESTAT.outline,
+      ESTAT.capitols
+    );
+}
+
+// ─── Confetti ────────────────────────────────────────────────
+function llençarConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const colors = ['#7c6af7', '#a78bfa', '#4ade80', '#fbbf24', '#f472b6', '#38bdf8'];
+  const particles = Array.from({ length: 130 }, () => ({
+    x:    Math.random() * canvas.width,
+    y:    Math.random() * canvas.height - canvas.height,
+    r:    Math.random() * 5 + 3,
+    d:    Math.random() * 90,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    tiltAngle:    0,
+    tiltAngleInc: Math.random() * 0.07 + 0.05
+  }));
+
+  let angle = 0;
+  let frame = 0;
+
+  (function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    angle += 0.01;
+    frame++;
+    particles.forEach(function(p) {
+      p.tiltAngle += p.tiltAngleInc;
+      p.y += (Math.cos(angle + p.d) + 3 + p.r / 2) * 0.9;
+      p.x += Math.sin(angle) * 1.5;
+      const tilt = Math.sin(p.tiltAngle) * 14;
+      ctx.beginPath();
+      ctx.lineWidth   = p.r;
+      ctx.strokeStyle = p.color;
+      ctx.moveTo(p.x + tilt + p.r / 4, p.y);
+      ctx.lineTo(p.x + tilt, p.y + tilt + p.r / 4);
+      ctx.stroke();
+    });
+    if (frame < 220) requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  })();
 }
 
 // ─── Navegar entre capítols ──────────────────────────────────
