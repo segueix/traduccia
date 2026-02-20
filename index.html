@@ -392,7 +392,7 @@
     <option value="">— Selecciona un gènere —</option>
     <option value="conte de terror psicològic">Terror psicològic</option>
     <option value="conte de realisme màgic">Realisme màgic</option>
-    <option value="conte negre / noir">Conte negre / noir</option>
+    <option value="conte negre nòrdic (Nordic Noir)">Conte negre (Nordic Noir)</option>
     <option value="conte de ciència-ficció breu">Ciència ficció</option>
     <option value="conte fantàstic">Conte fantàstic</option>
     <option value="faula contemporània">Faula contemporània</option>
@@ -775,7 +775,7 @@ function iniciarFase3() {
       renderProtagonistes(res.response);
     })
     .withFailureHandler(err => { hideLoader(3); toast('Error: ' + err.message); })
-    .fase3_personatges(ESTAT.premissaTriada, ESTAT.estil.desc, ESTAT.history, USER_CONFIG);
+    .fase3_personatges(ESTAT.premissaTriada, ESTAT.estil.desc, ESTAT.history, USER_CONFIG, ESTAT.tematica);
 }
 
 function renderProtagonistes(text) {
@@ -806,7 +806,7 @@ function iniciarFase4() {
       renderLlistaAmbRecomanat(res.response, 'llista-localitzacions', '_llistaLocalitzacions', '_idxLocalitzacio', 'btn-fase4');
     })
     .withFailureHandler(err => { hideLoader(4); toast('Error: ' + err.message); })
-    .fase_localitzacions(ESTAT.protagonistaTriat, ESTAT.estil.desc, ESTAT.history, USER_CONFIG);
+    .fase_localitzacions(ESTAT.protagonistaTriat, ESTAT.estil.desc, ESTAT.history, USER_CONFIG, ESTAT.tematica);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -831,7 +831,7 @@ function iniciarFase5() {
       renderLlistaAmbRecomanat(res.response, 'llista-finals', '_llistaFinals', '_idxFinal', 'btn-fase5');
     })
     .withFailureHandler(err => { hideLoader(5); toast('Error: ' + err.message); })
-    .fase4_finals(ESTAT.localitzacioTriada, ESTAT.estil.desc, ESTAT.history, USER_CONFIG);
+    .fase4_finals(ESTAT.localitzacioTriada, ESTAT.estil.desc, ESTAT.history, USER_CONFIG, ESTAT.tematica);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -894,7 +894,7 @@ function escriureSeguentPart() {
       hideLoader(6);
       toast('Error a la part ' + part + ': ' + err.message);
     })
-    .escriureContePart(part, total, perPart, ESTAT.finalTriat, ESTAT.estil.desc, ESTAT.history, USER_CONFIG);
+    .escriureContePart(part, total, perPart, ESTAT.finalTriat, ESTAT.estil.desc, ESTAT.history, USER_CONFIG, ESTAT.tematica);
 }
 
 function mostrarConte(text) {
@@ -943,7 +943,7 @@ function millorarConte() {
       toast('Millora aplicada.');
     })
     .withFailureHandler(err => { hideLoader(6); toast('Error: ' + err.message); })
-    .millorarConte(instruccio, ESTAT.conteText, ESTAT.estil.desc, ESTAT.history, USER_CONFIG);
+    .millorarConte(instruccio, ESTAT.conteText, ESTAT.estil.desc, ESTAT.history, USER_CONFIG, ESTAT.tematica);
 }
 
 // ═══════════════════════════════════════════════════════════

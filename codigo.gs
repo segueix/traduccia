@@ -174,12 +174,30 @@ function parseJsonResponse(rawResponse, providerName) {
   return parsed;
 }
 
-// ─── System prompt per a contes ────────────────────────────
+// ─── System prompt base ────────────────────────────────────
 const SYSTEM_DEFAULT = `Ets un mestre del conte literari breu en català.
 Apliques el principi d'unitat d'efecte de Poe: cada paraula serveix un únic impacte emocional final.
 Escrius amb economia de paraules, primera frase magnètica, tensió creixent i finals memorables que ressonen.
 Mai desperdicies una frase. Prioritzes mostrar sobre explicar (show, don't tell).
 Respons sempre en català, amb veu literària precisa i original.`;
+
+// ─── System prompt dinàmic per gènere ──────────────────────
+function getSystemPrompt(tematica) {
+  const isNoir = tematica && /noir|negr[ae]|nòrdi/i.test(tematica);
+  if (!isNoir) return SYSTEM_DEFAULT;
+
+  return SYSTEM_DEFAULT + `
+
+── ESTIL NORDIC NOIR (Stieg Larsson) ──
+Prosa crua, directa i atmosfèrica: frases netes sense ornaments, carregades de tensió latent.
+To fred i opressiu: l'entorn nòrdic (hivern, foscor, aïllament geogràfic) actua com a personatge.
+Temàtiques centrals: corrupció institucional, violència sistèmica, secrets familiars soterrats, fallades de l'estat.
+Procediments detallats i creïbles: investigació policial o periodística amb lògica interna sòlida.
+Crítica social integrada a la trama, mai com a discurs extern o didàctic.
+Protagonistes durs i traumatitzats amb una tenacitat quasi obsessiva: la ferida personal impulsa la investigació.
+Estructura de revelació progressiva: el que semblava un cas puntual destapa un sistema podrit.
+Ritme pausat i metòdic en la investigació, però amb pics d'acció breu i brutal.`;
+}
 
 // ─── FASE 1: 10 premisses per a contes ─────────────────────
 function fase1_premisses(tematica, history, userConfig) {
@@ -209,13 +227,23 @@ Format ESTRICTE (res més, sense cap introducció):
 10. [premissa]`
   };
   const msgs       = [...history, userMsg];
-  const response   = callLLM(msgs, SYSTEM_DEFAULT, Object.assign({}, userConfig, { maxTokens: 1800 }));
+  const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens: 1800 }));
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
 }
 
 // ─── FASE 3: 5 protagonistes rics ──────────────────────────
-function fase3_personatges(premissaTriada, estilDesc, history, userConfig) {
+function fase3_personatges(premissaTriada, estilDesc, history, userConfig, tematica) {
+  const isNoir = tematica && /noir|negr[ae]|nòrdi/i.test(tematica);
+
+  const protagonistePrompt = isNoir
+    ? `Genera 5 protagonistes possibles per a aquest conte NEGRE NÒRDIC. Han de ser arquetips propis del gènere.
+
+Usa exclusivament aquests tipus: detectiu/investigador traumatitzat, periodista d'investigació obstinada, hacker antisocial, advocat incorruptible en un sistema corrupte, o personatge marginal amb accés a informació perillosa.
+
+Cada protagonista ha de tenir veu pròpia i la ferida personal que el fa avançar quan tot indica que ha de parar.`
+    : `Genera 5 protagonistes possibles per a aquest conte. Cada un ha de tenir veu pròpia i tensió interna que el faci memorable.`;
+
   const msgs = [
     ...history,
     {
@@ -228,7 +256,7 @@ function fase3_personatges(premissaTriada, estilDesc, history, userConfig) {
     },
     {
       role: 'user',
-      content: `Genera 5 protagonistes possibles per a aquest conte. Cada un ha de tenir veu pròpia i tensió interna que el faci memorable.
+      content: `${protagonistePrompt}
 
 Afegeix (Recomanat) al final del protagonista que millor encaixi amb la premissa i l'estil triat.
 
@@ -240,13 +268,13 @@ Format ESTRICTE (5 opcions, res més):
 5. **[Nom, edat]** | Desig: [...] | Temor: [...] | Contradicció: [...] | Veu: [...]`
     }
   ];
-  const response   = callLLM(msgs, SYSTEM_DEFAULT, Object.assign({}, userConfig, { maxTokens: 2200 }));
+  const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens: 2200 }));
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
 }
 
 // ─── FASE 4: 5 localitzacions ───────────────────────────────
-function fase_localitzacions(protagonistaTriat, estilDesc, history, userConfig) {
+function fase_localitzacions(protagonistaTriat, estilDesc, history, userConfig, tematica) {
   const msgs = [
     ...history,
     { role: 'user',      content: `He triat el protagonista: "${protagonistaTriat}".` },
@@ -270,13 +298,13 @@ Format ESTRICTE (5 opcions, res més):
 5. **[Nom/tipus de lloc]** | Atmosfera: [...] | Detall clau: [...] | Potencial: [...]`
     }
   ];
-  const response   = callLLM(msgs, SYSTEM_DEFAULT, Object.assign({}, userConfig, { maxTokens: 1800 }));
+  const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens: 1800 }));
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
 }
 
 // ─── FASE 5: 5 finals possibles ─────────────────────────────
-function fase4_finals(localitzacioTriada, estilDesc, history, userConfig) {
+function fase4_finals(localitzacioTriada, estilDesc, history, userConfig, tematica) {
   const msgs = [
     ...history,
     { role: 'user',      content: `He triat la localització: "${localitzacioTriada}".` },
@@ -301,7 +329,7 @@ Format ESTRICTE (5 opcions, res més):
 5. [descripció del final en 2-3 frases]`
     }
   ];
-  const response   = callLLM(msgs, SYSTEM_DEFAULT, Object.assign({}, userConfig, { maxTokens: 1800 }));
+  const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens: 1800 }));
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
 }
@@ -316,12 +344,23 @@ Format ESTRICTE (5 opcions, res més):
 // paraulesPerPart: objectiu de paraules per a aquesta part
 // finalTriat:    el final escollit (s'inclou a l'última part)
 // estilDesc:     descripció de l'estil narratiu
-function escriureContePart(partNum, totalParts, paraulesPerPart, finalTriat, estilDesc, history, userConfig) {
-  const pp = parseInt(paraulesPerPart) || 750;
+// tematica:      gènere triat (per activar estil Nordic Noir si escau)
+function escriureContePart(partNum, totalParts, paraulesPerPart, finalTriat, estilDesc, history, userConfig, tematica) {
+  const pp     = parseInt(paraulesPerPart) || 750;
+  const isNoir = tematica && /noir|negr[ae]|nòrdi/i.test(tematica);
+
+  // Instruccions addicionals per al Nordic Noir
+  const noirExtra = isNoir
+    ? `\nESTIL NORDIC NOIR OBLIGATORI per a aquesta part:
+→ Descripcions minucioses i procedimentals: cada acció d'investigació s'explica amb lògica creïble.
+→ Integra detalls de procediment policial, forense o periodístic de forma natural a la narració.
+→ Pinzellades de crítica social concreta (noms d'institucions, mecanismes de poder) sense discurs explícit.
+→ L'entorn nòrdic (fred, silenci, llum escassa) present com a pressió constant sobre els personatges.`
+    : '';
+
   let userContent;
 
   if (totalParts === 1) {
-    // ── Conte sencer en una sola crida (microconte ≤500 paraules) ──
     userContent =
 `He triat el final: "${finalTriat}".
 
@@ -331,11 +370,10 @@ Final obligatori: "${finalTriat}"
 OBERTURA: primera frase magnètica, tensió immediata. Primers 3 paràgrafs sense exposició directa.
 ESTRUCTURA: unitat d'efecte, tensió creixent, punt d'inflexió a les 2/3 parts.
 ESTIL: mostra no expliquis, detalls sensorials concrets, ritme variat, veu única, diàlegs que revelen caràcter.
-FINAL: l'última frase ressona i tanca un cercle del principi.
+FINAL: l'última frase ressona i tanca un cercle del principi.${noirExtra}
 Escriu directament el conte, sense títol ni nota de l'autor.`;
 
   } else if (partNum === 1) {
-    // ── Primera part: obertura i plantejament ──
     userContent =
 `He triat el final: "${finalTriat}".
 
@@ -346,22 +384,20 @@ Objectiu d'aquesta part:
 → Establir la veu, l'atmosfera i el personatge sense exposició directa.
 → Plantar la tensió central i el conflicte que s'ha de resoldre.
 → Acabar en un punt de suspens que demani la continuació (NO resolguis res).
-Mostra, no expliquis. Detalls sensorials concrets. Veu única.
+Mostra, no expliquis. Detalls sensorials concrets. Veu única.${noirExtra}
 Escriu directament, sense títol ni indicació de "Part 1".`;
 
   } else if (partNum < totalParts) {
-    // ── Part central: desenvolupament i escalada ──
     userContent =
 `Continua el conte amb la PART ${partNum} (~${pp} paraules).
 
 Objectiu d'aquesta part:
 → Augmenta el conflicte i la pressió sobre el protagonista.
 → Introdueix el punt d'inflexió o la complicació principal.
-→ Acaba quan la tensió arriba al màxim, just abans de la resolució.
+→ Acaba quan la tensió arriba al màxim, just abans de la resolució.${noirExtra}
 Continua directament des d'on ha quedat el text. Sense cap indicació de part.`;
 
   } else {
-    // ── Última part: clímax i resolució ──
     userContent =
 `Finalitza el conte amb la PART FINAL (~${pp} paraules).
 
@@ -369,20 +405,19 @@ El desenllaç OBLIGATORI és: "${finalTriat}"
 
 → Executa el clímax i la resolució amb precisió literària.
 → El desenllaç ha de ser inevitable en retrospectiva però imprevist durant la lectura.
-→ L'última frase ha de ressonar i tancar un cercle obert al principi.
+→ L'última frase ha de ressonar i tancar un cercle obert al principi.${noirExtra}
 Continua directament des d'on ha quedat el text. Sense cap indicació de part.`;
   }
 
   const msgs      = [...history, { role: 'user', content: userContent }];
-  // Màxim ~2800 tokens per crida → ben per sota del timeout de GAS
   const maxTokens = Math.min(Math.round(pp * 1.9) + 400, 2800);
-  const response   = callLLM(msgs, SYSTEM_DEFAULT, Object.assign({}, userConfig, { maxTokens }));
+  const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens }));
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
 }
 
 // ─── MILLORA: Regenera el conte amb instrucció específica ───
-function millorarConte(instruccio, conteActual, estilDesc, history, userConfig) {
+function millorarConte(instruccio, conteActual, estilDesc, history, userConfig, tematica) {
   const msgs = [
     ...history,
     {
@@ -391,7 +426,7 @@ function millorarConte(instruccio, conteActual, estilDesc, history, userConfig) 
     }
   ];
   const maxTokens  = Math.min(Math.round(conteActual.split(' ').length * 2.5) + 600, 8000);
-  const response   = callLLM(msgs, SYSTEM_DEFAULT, Object.assign({}, userConfig, { maxTokens }));
+  const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens }));
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
 }
