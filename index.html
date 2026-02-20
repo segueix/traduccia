@@ -947,6 +947,7 @@
 
   <div class="btn-row">
     <button class="btn btn-primary" onclick="guardarIComencar()">Guardar i Començar</button>
+    <button class="btn btn-secondary" id="btn-auto-mode" onclick="activarPilotAutomatic()">🤖 Activar Pilot Automàtic</button>
   </div>
 </div>
 
@@ -1557,6 +1558,22 @@ function construirContextFetsCanonics(limit) {
 //  ESTAT GLOBAL
 // ═══════════════════════════════════════════════════════════
 let USER_CONFIG = null;
+let isAutoMode  = false;
+
+function activarPilotAutomatic() {
+  isAutoMode = true;
+  const btn = document.getElementById('btn-auto-mode');
+  if (btn) {
+    btn.textContent = '✅ Pilot Automàtic activat';
+    btn.disabled = true;
+  }
+  toast('Pilot Automàtic activat. Es triaran opcions recomanades automàticament.');
+}
+
+function autoSeguentFase(fn, delay) {
+  if (!isAutoMode || typeof fn !== 'function') return;
+  setTimeout(fn, typeof delay === 'number' ? delay : 180);
+}
 
 const ESTAT = {
   fase:             0,
@@ -1671,6 +1688,7 @@ function iniciarFase1() {
       ESTAT.history = res.history;
       hideLoader(1);
       renderPremisses(res.response);
+      autoSeguentFase(iniciarFase2);
     })
     .withFailureHandler(err => { hideLoader(1); toast('Error: ' + err.message); })
     .fase1_premisses(sel, [], USER_CONFIG);
@@ -1709,6 +1727,13 @@ function renderLlistaAmbRecomanat(text, wrapId, listaKey, idxKey, btnId) {
       el.classList.add('chosen');
       el.querySelector('input').checked = true;
       ESTAT[idxKey] = autoIdx;
+    }
+  } else if (isAutoMode && list.length > 0) {
+    const el = document.getElementById(`${wrapId}-item-0`);
+    if (el) {
+      el.classList.add('chosen');
+      el.querySelector('input').checked = true;
+      ESTAT[idxKey] = 0;
     }
   }
   showBtn(btnId);
@@ -1774,6 +1799,7 @@ function iniciarFase3() {
       ESTAT.history = res.history;
       hideLoader(3);
       renderProtagonistes(res.response);
+      autoSeguentFase(iniciarFase4);
     })
     .withFailureHandler(err => { hideLoader(3); toast('Error: ' + err.message); })
     .fase3_personatges(ESTAT.premissaTriada, ESTAT.estil.desc, ESTAT.history, USER_CONFIG, ESTAT.tematica);
@@ -1805,6 +1831,7 @@ function iniciarFase4() {
       ESTAT.history = res.history;
       hideLoader(4);
       renderLlistaAmbRecomanat(res.response, 'llista-localitzacions', '_llistaLocalitzacions', '_idxLocalitzacio', 'btn-fase4');
+      autoSeguentFase(iniciarFase5);
     })
     .withFailureHandler(err => { hideLoader(4); toast('Error: ' + err.message); })
     .fase_localitzacions(ESTAT.protagonistaTriat, ESTAT.estil.desc, ESTAT.history, USER_CONFIG, ESTAT.tematica);
@@ -1830,6 +1857,7 @@ function iniciarFase5() {
       ESTAT.history = res.history;
       hideLoader(5);
       renderLlistaAmbRecomanat(res.response, 'llista-finals', '_llistaFinals', '_idxFinal', 'btn-fase5');
+      autoSeguentFase(iniciarEscriptura);
     })
     .withFailureHandler(err => { hideLoader(5); toast('Error: ' + err.message); })
     .fase4_finals(ESTAT.localitzacioTriada, ESTAT.estil.desc, ESTAT.history, USER_CONFIG, ESTAT.tematica);
@@ -1986,6 +2014,7 @@ function iniciarFase7() {
       ESTAT.history = res.history;
       hideLoader(7);
       renderLlistaWorldbuilding(res.response);
+      autoSeguentFase(expandirElementsSeleccionats);
     })
     .withFailureHandler(err => { hideLoader(7); toast('Error: ' + err.message); })
     .fase7_worldbuilding(ESTAT.conteText, ESTAT.tematica, ESTAT.estil.desc, ESTAT.history, USER_CONFIG);
@@ -2055,6 +2084,7 @@ function expandirElementsSeleccionats() {
       ESTAT.worldbuilding = res.response;
       hideLoader(7);
       mostrarResultatWorldbuilding(res.response);
+      autoSeguentFase(iniciarFase8);
     })
     .withFailureHandler(err => { hideLoader(7); toast('Error: ' + err.message); })
     .fase7_expandirElements(labels, ESTAT.conteText, ESTAT.tematica, ESTAT.history, USER_CONFIG);
@@ -2106,6 +2136,7 @@ function iniciarFase8() {
       ESTAT.history = res.history;
       hideLoader(8);
       renderLlistaElenc(res.response);
+      autoSeguentFase(confirmarElenc);
     })
     .withFailureHandler(err => { hideLoader(8); toast('Error: ' + err.message); })
     .fase8_elenc(ESTAT.conteText, ESTAT.worldbuilding, ESTAT.tematica, ESTAT.estil.desc, ESTAT.history, USER_CONFIG);
@@ -2196,6 +2227,7 @@ function iniciarFase9() {
       ESTAT.history = res.history;
       hideLoader(9);
       renderLlistaEstructura(res.response);
+      autoSeguentFase(confirmarEstructura);
     })
     .withFailureHandler(err => { hideLoader(9); toast('Error: ' + err.message); })
     .fase9_estructura(ESTAT.conteText, ESTAT.worldbuilding, ESTAT.elencPersonatges, ESTAT.tematica, ESTAT.estil.desc, ESTAT.history, USER_CONFIG);
@@ -2337,6 +2369,7 @@ function iniciarFase10() {
           setTimeout(() => {
             document.getElementById('fase-10').scrollIntoView({ behavior: 'smooth', block: 'start' });
           }, 100);
+          autoSeguentFase(iniciarFase11);
         })
         .withFailureHandler(err => {
           hideLoader(10);
@@ -2475,6 +2508,7 @@ function iniciarFase11() {
       ESTAT.history = res.history;
       hideLoader(11);
       renderLlistaSubtrames(res.response);
+      autoSeguentFase(confirmarSubtrames);
     })
     .withFailureHandler(err => { hideLoader(11); toast('Error: ' + err.message); })
     .fase11_subtrames(ctx, outlineCompacte, ESTAT.history, USER_CONFIG, ESTAT.tematica);
@@ -2569,6 +2603,7 @@ function iniciarFase12() {
       ESTAT.cronologia = res.response;
       hideLoader(12);
       mostrarCronologia(res.response);
+      autoSeguentFase(confirmarCronologia);
     })
     .withFailureHandler(err => { hideLoader(12); toast('Error: ' + err.message); })
     .fase12_cronologia(ctx, outlineCompacte, ESTAT.subtrames, ESTAT.history, USER_CONFIG, ESTAT.tematica);
@@ -2667,6 +2702,7 @@ function iniciarFase13() {
       hideLoader(13);
       renderBibliaView(biblia);
       document.getElementById('biblia-content').classList.remove('hidden');
+      autoSeguentFase(iniciarFase14);
     })
     .withFailureHandler(err => { hideLoader(13); toast('Error: ' + err.message); })
     .fase13_compilarBiblia(dades);
@@ -3265,6 +3301,11 @@ function iniciarRevisio() {
     return acc;
   }, []);
   const capGeneratsFinestra = capGenerats.slice(-6);
+  const ultCapGeneratNum = capGenerats.length ? capGenerats[capGenerats.length - 1].num : 0;
+  const outlineFutur = (ESTAT.outline || [])
+    .filter(cap => cap && cap.num > ultCapGeneratNum)
+    .map(cap => 'Cap. ' + cap.num + ' — ' + (cap.text || ''))
+    .join('\n');
 
   if (capGenerats.length === 0) { toast('No hi ha capítols generats.'); return; }
 
@@ -3286,7 +3327,7 @@ function iniciarRevisio() {
       document.getElementById('revisio-loader').classList.remove('visible');
       toast('Error a la revisió: ' + err.message);
     })
-    .fase15_revisioCoherencia(capGeneratsFinestra, ESTAT.biblia, USER_CONFIG, construirContextFetsCanonics(12));
+    .fase15_revisioCoherencia(capGeneratsFinestra, ESTAT.biblia, USER_CONFIG, construirContextFetsCanonics(12), outlineFutur);
 }
 
 // ─── Renderitzar l'informe de revisió ───────────────────────

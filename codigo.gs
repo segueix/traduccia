@@ -781,7 +781,7 @@ function analitzarAmbEditor(userPrompt, userConfig) {
 // capitolsData: array de {num, outlineText, text} per als capítols generats.
 // biblia:       string (bíblia de consistència compilada).
 // userConfig:   configuració del LLM de l'usuari.
-function fase15_revisioCoherencia(capitolsData, biblia, userConfig, fetsCanonicsText) {
+function fase15_revisioCoherencia(capitolsData, biblia, userConfig, fetsCanonicsText, outlineFuturText) {
   var d = capitolsData || [];
 
   // Comprimir cada capítol: primeres i últimes 200 paraules + outline
@@ -816,8 +816,58 @@ function fase15_revisioCoherencia(capitolsData, biblia, userConfig, fetsCanonics
     'Si no trobes cap problema real, escriu únicament: "Cap inconsistència detectada."\n' +
     'Cap comentari addicional fora d\'aquest format.';
 
-  var response = analitzarAmbEditor(userPrompt, userConfig);
-  return { response: response };
+  var propostaCritic = analitzarAmbEditor(userPrompt, userConfig);
+
+  if (!propostaCritic || !propostaCritic.trim() || /cap inconsistència detectada\./i.test(propostaCritic)) {
+    return { response: 'Cap inconsistència detectada.' };
+  }
+
+  var blocs = [];
+  var current = null;
+  propostaCritic.split('\n').forEach(function(line) {
+    var l = (line || '').trim();
+    if (/^PROBLEMA:/i.test(l)) {
+      if (current) blocs.push(current);
+      current = { problema: l.replace(/^PROBLEMA:\s*/i, '').trim(), correccio: '', capNum: null };
+    } else if (/^CORREC/i.test(l) && current) {
+      current.correccio = l.replace(/^CORREC[CÇ]I[ÓO]:\s*/i, '').trim();
+      var m = current.correccio.match(/^\[?Cap\.?\s*(\d+)\]?/i);
+      if (m) current.capNum = parseInt(m[1], 10);
+    } else if (current && l && !current.correccio) {
+      current.problema += ' ' + l;
+    }
+  });
+  if (current) blocs.push(current);
+
+  if (!blocs.length) return { response: 'Cap inconsistència detectada.' };
+
+  var aprovades = [];
+  blocs.forEach(function(bloc) {
+    if (!bloc || !bloc.correccio || !bloc.capNum) return;
+
+    var capNum = bloc.capNum;
+    var capsAfectats = d.filter(function(cap) { return cap && cap.num === capNum; });
+    var resumCapsAfectats = capsAfectats.map(function(cap) {
+      var txt = (cap.text || '').trim().split(/\s+/).slice(0, 260).join(' ');
+      return '=== CAPÍTOL ' + cap.num + ' ===\nOUTLINE: ' + (cap.outlineText || '') + '\nTEXT:\n' + txt;
+    }).join('\n\n');
+
+    var supervisorPrompt =
+      'Aquesta és una correcció proposada per al capítol ' + capNum + ':\n\n' +
+      'PROBLEMA: ' + (bloc.problema || '—') + '\n' +
+      'CORRECCIÓ: ' + bloc.correccio + '\n\n' +
+      '=== CAPÍTOLS AFECTATS ===\n' + (resumCapsAfectats || '—') + '\n\n' +
+      '=== OUTLINE FUTUR ===\n' + (outlineFuturText || '—') + '\n\n' +
+      'Aquesta és una correcció proposada per al capítol X. Si apliquem això, ¿es trenca algun esdeveniment que ha de passar als capítols futurs segons l\'outline? Respon \'APROVAT\' si és segur, o \'REBUTJAT\' seguit del motiu si trenca la història.';
+
+    var respostaSupervisor = analitzarAmbEditor(supervisorPrompt, userConfig);
+    if (/^\s*APROVAT\b/i.test(respostaSupervisor || '')) {
+      aprovades.push('PROBLEMA: ' + (bloc.problema || '—'));
+      aprovades.push('CORRECCIÓ: ' + bloc.correccio);
+    }
+  });
+
+  return { response: aprovades.length ? aprovades.join('\n') : 'Cap inconsistència detectada.' };
 }
 
 // ─── FASE 14: Escriure un capítol (patró anti-timeout, 2 parts) ──
