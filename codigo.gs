@@ -708,6 +708,45 @@ function fase13_bibliaPerCapitol(biblia, outlineDetallat, numCapitol, textCapAnt
   return context;
 }
 
+// ─── FASE 17: Elements paratextuals ─────────────────────────
+// Una sola crida: 5 títols, divisió en parts (si >15 caps),
+// epígraf i sinopsi de contraportada (~100 paraules).
+// outline: array de {num, text, titol} per a cada capítol.
+function fase17_paratextos(biblia, outline, tematica, userConfig) {
+  var caps  = outline || [];
+  var total = caps.length;
+
+  var outlineResumen = caps.map(function(cap) {
+    var titol = (cap.titol || cap.text || '').split('|')[0].trim().substring(0, 80);
+    return 'Cap. ' + (cap.num || '?') + ' — ' + titol;
+  }).join('\n');
+
+  var divisioInstr = total > 15
+    ? '\n## DIVISIÓ EN PARTS\nProposa una divisió en 2-4 parts o llibres. Per a cada part: nom evocador i rang de capítols.\n'
+    : '';
+  var divisioHeader = total > 15 ? ', ## DIVISIÓ EN PARTS' : '';
+
+  var msgs = [{
+    role: 'user',
+    content:
+      '=== BÍBLIA (resum) ===\n' + (biblia || '').substring(0, 1500) + '\n\n' +
+      '=== OUTLINE (' + total + ' capítols) ===\n' + outlineResumen + '\n\n---\n' +
+      'Genera els elements paratextuals per a aquesta novel·la.\n\n' +
+      '## TÍTOLS\n' +
+      'Proposa 5 títols originals, evocadors i comercialment atractius. Marca el més potent amb (Recomanat).\n' +
+      'Format: 1. [títol]\n2. [títol]\n... un per línia.\n' +
+      divisioInstr +
+      '\n## EPÍGRAF\n' +
+      'Epígraf breu (màxim 3 línies) que capturi l\'essència de la novel·la. Pot ser una cita real o atribuïble a un autor/obra fictícia. Inclou l\'atribució.\n\n' +
+      '## SINOPSI\n' +
+      'Sinopsi de contraportada (~100 paraules). Presenta el protagonista i el conflicte central, crea intriga, no revela el final. To engrescador i directe.\n\n' +
+      'IMPORTANT: Respon ÚNICAMENT en català. Respecta l\'ordre i els encapçalaments exactes: ## TÍTOLS' + divisioHeader + ', ## EPÍGRAF, ## SINOPSI. Sense cap altra secció ni comentari.'
+  }];
+
+  var response = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens: 2500 }));
+  return { response: response };
+}
+
 // ─── System prompt d'Editor IA (reutilitzable) ──────────────
 const EDITOR_SYSTEM = `Ets un editor literari expert i minuciós. La teva tasca és analitzar textos narratius i identificar problemes de coherència interna: contradiccions factuals, canvis de to injustificats, fils narratius abandonats i inconsistències de personatges.
 Respons exclusivament en català. No alibies el text. Identifica problemes reals i proposa correccions concretes i accionables. Si no trobes cap problema, digues-ho clarament.`;

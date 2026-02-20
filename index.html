@@ -564,6 +564,42 @@
   /* ── Secció amagada ── */
   .hidden { display: none !important; }
 
+  /* ── Fase 17: Paratextos ── */
+  .para-seccio {
+    margin-bottom: 26px;
+    padding-bottom: 26px;
+    border-bottom: 1px solid var(--border);
+  }
+  .para-seccio:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .para-titol-seccio {
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .09em;
+    font-weight: 700;
+    color: var(--accent2);
+    margin-bottom: 12px;
+  }
+  .para-textarea {
+    width: 100%;
+    padding: 14px 18px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: .92rem;
+    font-family: var(--font);
+    line-height: 1.78;
+    resize: vertical;
+    transition: border-color .2s;
+  }
+  .para-textarea:focus { outline: none; border-color: var(--accent); }
+  .para-wordcount {
+    font-size: .78rem;
+    color: var(--text2);
+    text-align: right;
+    margin-bottom: 6px;
+  }
+
   /* ── Fase 16: Panel de poliment ── */
   .cap-millora-panel {
     margin-top: 18px;
@@ -872,6 +908,8 @@
     <div class="step-pill" data-step="13">Bíblia</div>
     <div class="step-arrow">›</div>
     <div class="step-pill" data-step="14">Novel·la</div>
+    <div class="step-arrow">›</div>
+    <div class="step-pill" data-step="17">Paratextos</div>
   </div>
 </div>
 
@@ -1255,6 +1293,11 @@
     </div>
   </div>
 
+  <!-- Accés a Fase 17 (sempre visible dins fase-14) -->
+  <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;">
+    <button class="btn btn-primary" onclick="iniciarFase17()">📚 Elements paratextuals →</button>
+  </div>
+
   <!-- Panel de revisió de coherència (Fase 15) -->
   <div class="revisio-panel hidden" id="revisio-panel">
     <div class="revisio-panel-header">
@@ -1266,6 +1309,56 @@
       <span>Analitzant la coherència dels capítols…</span>
     </div>
     <div class="editor-result hidden" id="revisio-result"></div>
+  </div>
+</div>
+
+<!-- FASE 17: Elements paratextuals -->
+<div class="card hidden" id="fase-17">
+  <h2><span class="icon">📚</span> Elements paratextuals</h2>
+  <p style="color:var(--text2);font-size:.9rem;margin-bottom:24px;">Tria el títol definitiu i ajusta l'epígraf i la sinopsi. Podràs editar-los lliurement.</p>
+
+  <div class="loader-wrap" id="loader-17">
+    <div class="spinner"></div>
+    <span>Generant títols, epígraf i sinopsi…</span>
+  </div>
+
+  <div id="para-content" class="hidden">
+
+    <!-- Títol de la novel·la -->
+    <div class="para-seccio">
+      <p class="para-titol-seccio">Títol de la novel·la</p>
+      <div id="para-titols-list" class="premise-list"></div>
+    </div>
+
+    <!-- Divisió en parts (només si >15 capítols) -->
+    <div class="para-seccio hidden" id="para-divisio-seccio">
+      <p class="para-titol-seccio">Divisió en parts / llibres</p>
+      <textarea id="para-divisio-ta" class="para-textarea" rows="4"
+        oninput="ESTAT.divisioEnParts = this.value"></textarea>
+    </div>
+
+    <!-- Epígraf -->
+    <div class="para-seccio">
+      <p class="para-titol-seccio">Epígraf</p>
+      <textarea id="para-epigraf-ta" class="para-textarea" rows="4"
+        placeholder="Epígraf de la novel·la…"
+        oninput="ESTAT.epigraf = this.value"></textarea>
+    </div>
+
+    <!-- Sinopsi de contraportada -->
+    <div class="para-seccio">
+      <p class="para-titol-seccio">Sinopsi de contraportada</p>
+      <div class="para-wordcount" id="para-sinopsi-wc"></div>
+      <textarea id="para-sinopsi-ta" class="para-textarea" rows="6"
+        placeholder="Sinopsi de la novel·la…"
+        oninput="ESTAT.sinopsi = this.value; actualitzarWCSinopsi()"></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="iniciarFase17()">🔄 Regenerar</button>
+      <button class="btn btn-primary"   onclick="assemblarNovela()">📦 Assemblar novel·la</button>
+    </div>
+    <div id="assemblar-link-wrap" class="hidden" style="margin-top:14px;"></div>
   </div>
 </div>
 
@@ -1363,7 +1456,14 @@ const ESTAT = {
   capitols:                 [],  // null o text per a cada capítol
   _capActual:               0,   // índex 0-based del capítol actiu
   _capGenerant:             null, // índex del capítol en generació (o null)
-  _revisioCapTrigger:       0    // nº de capítols quan es va mostrar l'últim banner
+  _revisioCapTrigger:       0,   // nº de capítols quan es va mostrar l'últim banner
+  // Fase 17: paratextos
+  titolNovel:               '',
+  sinopsi:                  '',
+  epigraf:                  '',
+  divisioEnParts:           '',
+  _titolsProposta:          [],
+  _titolIdx:                null
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -2668,6 +2768,171 @@ function millorarCapitolActual() {
     })
     .millorarCapitol(idx + 1, instruccio, ESTAT.capitols[idx], ESTAT.biblia,
       outlineCapitol, capsAdjacents, ESTAT.estil.desc, USER_CONFIG, ESTAT.tematica);
+}
+
+// ─── FASE 14 → FASE 17: entrada ─────────────────────────────
+function iniciarFase17() {
+  if (!ESTAT.biblia) { toast('Cal completar la bíblia (Fase 13) primer.'); return; }
+
+  ESTAT.fase = 17;
+  updateProgress(17);
+  showCard('fase-17');
+  document.getElementById('para-content').classList.add('hidden');
+  showLoader(17);
+  setTimeout(() => {
+    document.getElementById('fase-17').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      hideLoader(17);
+      renderParatextos(res.response);
+      document.getElementById('para-content').classList.remove('hidden');
+    })
+    .withFailureHandler(function(err) {
+      hideLoader(17);
+      toast('Error: ' + err.message);
+    })
+    .fase17_paratextos(ESTAT.biblia, ESTAT.outline, ESTAT.tematica, USER_CONFIG);
+}
+
+// ─── Parsejar i renderitzar la resposta del backend ─────────
+function renderParatextos(text) {
+  // Separar per seccions "## NOM"
+  const sections = {};
+  let currentKey  = null;
+  let currentBuf  = [];
+
+  (text + '\n## END').split('\n').forEach(line => {
+    if (/^##\s+/.test(line.trim())) {
+      if (currentKey !== null) sections[currentKey] = currentBuf.join('\n').trim();
+      currentKey = line.trim().replace(/^##\s+/, '').toUpperCase()
+        .replace(/[ÀÁÂÃÄÅ]/g, 'A').replace(/[ÈÉÊË]/g, 'E')
+        .replace(/[ÌÍÎÏ]/g, 'I').replace(/[ÒÓÔÕÖ]/g, 'O')
+        .replace(/[ÙÚÛÜ]/g, 'U');
+      currentBuf = [];
+    } else {
+      currentBuf.push(line);
+    }
+  });
+
+  // Títols
+  renderTitolsProposta(sections['TITOLS'] || sections['TITOL'] || '');
+
+  // Divisió en parts (opcional)
+  const divisio = sections['DIVISIO EN PARTS'] || sections['DIVISIO'] || '';
+  if (divisio) {
+    ESTAT.divisioEnParts = divisio;
+    document.getElementById('para-divisio-ta').value = divisio;
+    document.getElementById('para-divisio-seccio').classList.remove('hidden');
+  } else {
+    document.getElementById('para-divisio-seccio').classList.add('hidden');
+  }
+
+  // Epígraf
+  const epigraf = sections['EPIGRAF'] || sections['EPIGRAFE'] || '';
+  ESTAT.epigraf  = epigraf;
+  document.getElementById('para-epigraf-ta').value = epigraf;
+
+  // Sinopsi
+  const sinopsi = sections['SINOPSI'] || '';
+  ESTAT.sinopsi  = sinopsi;
+  document.getElementById('para-sinopsi-ta').value = sinopsi;
+  actualitzarWCSinopsi();
+}
+
+// ─── Renderitzar la llista de títols com a radio buttons ─────
+function renderTitolsProposta(text) {
+  const wrap  = document.getElementById('para-titols-list');
+  const lines = text.split('\n').filter(l => /^\d+[\.\)]/.test(l.trim()));
+
+  if (lines.length === 0) {
+    // Fallback: mostrar com a text pla
+    wrap.innerHTML = `<pre style="white-space:pre-wrap;font-size:.9rem;color:var(--text2);">${escHtml(text)}</pre>`;
+    return;
+  }
+
+  const list = lines.map(l => l.replace(/^\d+[\.\)]\s*/, '').trim());
+  ESTAT._titolsProposta = list.map(t => t.replace(/\s*\(Recomanat\)\s*/i, '').trim());
+  ESTAT._titolIdx       = null;
+
+  let autoIdx = null;
+  wrap.innerHTML = list.map((item, i) => {
+    const esRec  = /\(Recomanat\)/i.test(item);
+    const titol  = item.replace(/\s*\(Recomanat\)\s*/i, '').trim();
+    if (esRec) autoIdx = i;
+    const badge  = esRec ? '<span class="badge-recomanat">Recomanat</span>' : '';
+    return `<div class="premise-item" id="para-titol-item-${i}" onclick="triarTitol(${i}, this)">
+      <input type="radio" name="para-titol-radio" id="para-titol-r-${i}">
+      <label for="para-titol-r-${i}" style="font-size:1rem;font-weight:600;">${badge}${escHtml(titol)}</label>
+    </div>`;
+  }).join('');
+
+  if (autoIdx !== null) {
+    const el = document.getElementById(`para-titol-item-${autoIdx}`);
+    if (el) {
+      el.classList.add('chosen');
+      el.querySelector('input').checked = true;
+      ESTAT._titolIdx  = autoIdx;
+      ESTAT.titolNovel = ESTAT._titolsProposta[autoIdx];
+    }
+  }
+}
+
+// ─── Selecció de títol ───────────────────────────────────────
+function triarTitol(idx, el) {
+  document.querySelectorAll('#para-titols-list .premise-item').forEach(e => e.classList.remove('chosen'));
+  el.classList.add('chosen');
+  el.querySelector('input').checked = true;
+  ESTAT._titolIdx  = idx;
+  ESTAT.titolNovel = ESTAT._titolsProposta[idx] || '';
+}
+
+// ─── Comptador de paraules per a la sinopsi ──────────────────
+function actualitzarWCSinopsi() {
+  const ta  = document.getElementById('para-sinopsi-ta');
+  const wc  = document.getElementById('para-sinopsi-wc');
+  if (!ta || !wc) return;
+  const n = compteParaules(ta.value);
+  wc.textContent = n + ' paraules' + (n < 80 ? ' (objectiu: ~100)' : n > 130 ? ' (massa llarg)' : '');
+  wc.style.color = (n >= 80 && n <= 130) ? 'var(--success)' : 'var(--warning)';
+}
+
+// ─── Assemblar la novel·la (Fase 18 pending) ─────────────────
+function assemblarNovela() {
+  if (ESTAT._titolIdx === null) { toast('Tria primer el títol de la novel·la.'); return; }
+
+  // Desar l'estat actual dels textareas
+  ESTAT.titolNovel     = ESTAT._titolsProposta[ESTAT._titolIdx] || '';
+  ESTAT.sinopsi        = document.getElementById('para-sinopsi-ta').value.trim();
+  ESTAT.epigraf        = document.getElementById('para-epigraf-ta').value.trim();
+  ESTAT.divisioEnParts = document.getElementById('para-divisio-ta').value.trim();
+
+  const capsGenerats = ESTAT.capitols.filter(c => c !== null).length;
+  if (capsGenerats === 0) { toast('Genera almenys un capítol a la Fase 14 primer.'); return; }
+
+  toast('Assemblant la novel·la…');
+
+  // Construir el text complet: epígraf + capítols + sinopsi
+  const parts = [];
+  if (ESTAT.epigraf)   parts.push(ESTAT.epigraf + '\n\n―\n\n');
+  ESTAT.capitols.forEach((text, i) => {
+    if (!text) return;
+    const cap    = ESTAT.outline[i] || { num: i + 1, titol: '', text: '' };
+    const titolC = (cap.titol || cap.text || '').split('|')[0].trim() || ('Capítol ' + (i + 1));
+    parts.push('CAPÍTOL ' + (i + 1) + '\n' + titolC + '\n\n' + text);
+  });
+  const textComplet = parts.join('\n\n―\n\n');
+
+  google.script.run
+    .withSuccessHandler(function(url) {
+      const wrap = document.getElementById('assemblar-link-wrap');
+      wrap.innerHTML = `<a href="${url}" target="_blank" class="export-link">📖 Obrir la novel·la a Google Docs →</a>`;
+      wrap.classList.remove('hidden');
+      toast('Novel·la assemblada a Google Docs!');
+    })
+    .withFailureHandler(function(err) { toast('Error: ' + err.message); })
+    .exportarADoc(ESTAT.titolNovel || 'Novel·la', textComplet);
 }
 
 // ─── Navegar entre capítols ──────────────────────────────────
