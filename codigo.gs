@@ -474,7 +474,8 @@ ${conteActual}
 Avalua la qualitat literària. Si és correcte, digues-ho i justifica-ho breument. Si cal millorar, identifica el problema principal i proposa una instrucció concreta de millora (última línia amb el format INSTRUCCIÓ: [...]).`;
 
   const msgs     = [{ role: 'user', content: userMsg }];
-  const response = callLLM(msgs, systemEditor, Object.assign({}, editorConfig, { maxTokens: 1024 }));
+  const maxTokens = Math.min(Math.round(conteActual.split(' ').length * 0.8) + 1500, 4096);
+  const response = callLLM(msgs, systemEditor, Object.assign({}, editorConfig, { maxTokens }));
   return { response };
 }
 
