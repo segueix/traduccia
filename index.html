@@ -1135,7 +1135,7 @@
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="regenerarConte()">🔄 Regenerar</button>
       <button class="btn btn-secondary" onclick="exportarDoc()">📄 Exportar a Google Docs</button>
-      <button class="btn btn-primary"   onclick="iniciarFase7()">🌍 Expandir a novel·la</button>
+      <button class="btn btn-primary"   onclick="iniciarFase6b()">🗺️ Expandir a novel·la</button>
     </div>
     <div id="export-link-wrap" class="hidden" style="margin-top:14px;"></div>
   </div>
@@ -1254,6 +1254,22 @@
     <div id="llista-elenc" class="premise-list"></div>
     <div class="btn-row">
       <button class="btn btn-primary" onclick="confirmarElenc()">🏗️ Definir estructura</button>
+    </div>
+  </div>
+</div>
+
+<!-- FASE 6B: Esquelet de novel·la -->
+<div class="card hidden" id="fase-6b">
+  <h2><span class="icon">🗺️</span> Esquelet de la novel·la</h2>
+  <p style="color:var(--text2);font-size:.9rem;margin-bottom:16px;">Anàlisi del conte i pla d'expansió amb fils narratius, girs i subtrames calibrats al perfil d'autor.</p>
+  <div class="loader-wrap" id="loader-6b">
+    <div class="spinner"></div>
+    <span id="loader-6b-text">Generant l'esquelet d'expansió…</span>
+  </div>
+  <div id="esquelet-wrap" class="hidden">
+    <div class="worldbuilding-result" id="esquelet-cos"></div>
+    <div class="btn-row" style="margin-top:20px;">
+      <button class="btn btn-primary" onclick="iniciarFase7()">🌍 Continuar amb worldbuilding</button>
     </div>
   </div>
 </div>
@@ -1598,6 +1614,8 @@ const ESTAT = {
   _partActual:              1,
   _partsTexts:              [],
   conteText:                '',
+  // Esquelet de novel·la (Fase 6B)
+  esqueletNovela:           '',
   // Worldbuilding
   worldbuilding:            null,
   // Elenc de personatges
@@ -1992,7 +2010,36 @@ function exportarDoc() {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  FASE 6 → FASE 7: Worldbuilding
+//  FASE 6 → FASE 6B: Esquelet de novel·la
+// ═══════════════════════════════════════════════════════════
+function iniciarFase6b() {
+  if (!ESTAT.conteText) { toast('Primer genera el conte.'); return; }
+
+  ESTAT.fase = 6.5;
+  updateProgress(7);
+  showCard('fase-6b');
+  document.getElementById('esquelet-wrap').classList.add('hidden');
+  showLoader('6b');
+  document.getElementById('loader-6b-text').textContent = 'Generant l\'esquelet d\'expansió…';
+
+  google.script.run
+    .withSuccessHandler(res => {
+      ESTAT.esqueletNovela = res.response || '';
+      hideLoader('6b');
+      const cos = document.getElementById('esquelet-cos');
+      cos.innerHTML = `<pre style="white-space:pre-wrap;font-size:.9rem;">${escHtml(ESTAT.esqueletNovela)}</pre>`;
+      document.getElementById('esquelet-wrap').classList.remove('hidden');
+      setTimeout(() => {
+        document.getElementById('fase-6b').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+      autoSeguentFase(iniciarFase7);
+    })
+    .withFailureHandler(err => { hideLoader('6b'); toast('Error: ' + err.message); })
+    .fase6b_esqueletNovela(ESTAT.conteText, ESTAT.tematica, ESTAT.estil.desc, USER_CONFIG);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FASE 6B → FASE 7: Worldbuilding
 // ═══════════════════════════════════════════════════════════
 function iniciarFase7() {
   if (!ESTAT.conteText) { toast('Primer genera el conte.'); return; }
@@ -2135,7 +2182,7 @@ function iniciarFase8() {
       autoSeguentFase(confirmarElenc);
     })
     .withFailureHandler(err => { hideLoader(8); toast('Error: ' + err.message); })
-    .fase8_elenc(ESTAT.conteText, ESTAT.worldbuilding, ESTAT.tematica, ESTAT.estil.desc, ESTAT.history, USER_CONFIG);
+    .fase8_elenc(ESTAT.conteText, ESTAT.worldbuilding, ESTAT.tematica, ESTAT.estil.desc, ESTAT.history, USER_CONFIG, ESTAT.esqueletNovela);
 }
 
 function renderLlistaElenc(text) {
@@ -2226,7 +2273,7 @@ function iniciarFase9() {
       autoSeguentFase(confirmarEstructura);
     })
     .withFailureHandler(err => { hideLoader(9); toast('Error: ' + err.message); })
-    .fase9_estructura(ESTAT.conteText, ESTAT.worldbuilding, ESTAT.elencPersonatges, ESTAT.tematica, ESTAT.estil.desc, ESTAT.history, USER_CONFIG);
+    .fase9_estructura(ESTAT.conteText, ESTAT.worldbuilding, ESTAT.elencPersonatges, ESTAT.tematica, ESTAT.estil.desc, ESTAT.history, USER_CONFIG, ESTAT.esqueletNovela);
 }
 
 function renderLlistaEstructura(text) {
@@ -2335,6 +2382,25 @@ function comprimirContextClient() {
       const titol  = linies[0].replace(/\*\*/g, '').trim();
       const desc   = (linies[1] || '').trim().substring(0, 100);
       if (titol) parts.push('• ' + titol + (desc ? ': ' + desc : ''));
+    });
+  }
+
+  if (ESTAT.esqueletNovela && ESTAT.esqueletNovela.trim()) {
+    parts.push('\nESQUELET DE NOVEL·LA:');
+    let count = 0;
+    let inRellevant = false;
+    ESTAT.esqueletNovela.split('\n').forEach(l => {
+      if (count >= 25) return;
+      if (/^##\s+(FILS NARRATIUS|GIRS NARRATIUS|SUBTRAMES|FIL A|XARXA ANT|TRES FILS|CICLES|CALENDARI)/.test(l)) {
+        inRellevant = true;
+        parts.push(l.trim());
+        count++;
+      } else if (/^##/.test(l)) {
+        inRellevant = false;
+      } else if (inRellevant && l.trim()) {
+        parts.push(l.trim().substring(0, 120));
+        count++;
+      }
     });
   }
 

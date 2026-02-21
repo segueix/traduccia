@@ -753,6 +753,117 @@ function millorarCapitol(numCapitol, instruccio, capitolActual, biblia, outlineC
   return { response: response };
 }
 
+// ─── FASE 6B: Esquelet de novel·la — Expansió del conte ─────
+// Parteix del conte curt i genera un pla d'expansió amb fils,
+// girs i subtrames calibrats al perfil d'autor actiu.
+// El resultat (esqueletNovela) s'injecta a les fases 8, 9 i 10.
+function fase6b_esqueletNovela(conteActual, tematica, estilDesc, userConfig) {
+  var perfil = getPerfilAutor(tematica);
+
+  // Instruccions específiques per perfil
+  var instruccionsEspecifiques = '';
+  if (perfil) {
+    var e = perfil.estructura;
+    instruccionsEspecifiques =
+      '\n\n=== INSTRUCCIONS ESPECÍFIQUES PER A ' + perfil.nom.toUpperCase() + ' ===\n' +
+      'Tipus d\'estructura: ' + e.descripcio + '\n' +
+      'Fils narratius requerits: ' + e.numFilsNarratius + ' — ' + e.instruccioFils + '\n' +
+      'Punt mig (midpoint): ' + e.midpoint + '\n' +
+      'Clausura: ' + perfil.clausura.instruccio + '\n\n' +
+      'ANTAGONISME (' + perfil.antagonisme.tipus + '):\n' + perfil.antagonisme.instruccio + '\n' +
+      'Prohibicions d\'antagonisme: ' + perfil.antagonisme.prohibicions;
+  }
+
+  // Seccions extra específiques per al tipus d'outline
+  var seccionsExtra = '';
+  if (perfil) {
+    if (perfil.estructura.tipusOutline === 'dual_convergent') {
+      seccionsExtra =
+        '\n\n## FIL A vs FIL B\n' +
+        'Detalla els dos fils paral·lels: protagonista A (oficial) vs protagonista B (outsider). ' +
+        'Per a cada fil: Nom | Protagonista | Escenes pròpies abans de la convergència | ' +
+        'Punt de convergència (capítol estimat) | Canvi que provoca la unió.\n\n' +
+        '## XARXA ANTAGONISTA SISTÈMICA\n' +
+        'Desenvolupa el sistema de poder: (1) Rostre visible (càrrec, creença sincera) | ' +
+        '(2) Operador a l\'ombra (mètodes, moment de revelació) | ' +
+        '(3) Còmplice atemorit (posició, punt de trencament).';
+    } else if (perfil.estructura.tipusOutline === 'interlace_multigrupo') {
+      seccionsExtra =
+        '\n\n## TRES FILS ENTRELLAÇATS\n' +
+        'Detalla els tres grups amb els seus itineraris. Per a cada grup: Nom del grup | ' +
+        'Membres principals | Missió / objectiu | Capítols on s\'entrecreuen amb altres grups | ' +
+        'Resolució del fil al clímax.\n\n' +
+        '## ANTAGONISME CÒSMIC\n' +
+        'Desenvolupa la voluntat antagònica i com es manifesta a cada grup de manera diferent. ' +
+        'Inclou el moment de revelació del mal real i el preu de la victòria.';
+    } else if (perfil.estructura.tipusOutline === 'degradacio_progressiva') {
+      seccionsExtra =
+        '\n\n## CALENDARI DE DEGRADACIÓ\n' +
+        'Etapes de deteriorament de la realitat percebuda. Per a cada etapa: ' +
+        'Capítols | Nivell de certesa del protagonista (alt/mig/baix) | ' +
+        'Anomalia que desestabilitza | Reacció del protagonista | ' +
+        'Cosa que el protagonista NO sap que el lector sí.\n\n' +
+        '## CAPES DE REALITAT\n' +
+        'Defineix les capes de realitat (mínim 3) que s\'aniran revelant o col·lapsant. ' +
+        'Per a cada capa: Nom | Qui la percep com a real | Moment de qüestionament | ' +
+        'Si és definitiva o il·lusòria.';
+    } else if (perfil.estructura.tipusOutline === 'cicles_iniciatics') {
+      seccionsExtra =
+        '\n\n## CICLES D\'APRENENTATGE\n' +
+        'Estructura en cicles iniciàtics (mínim 3). Per a cada cicle: Nom del cicle | ' +
+        'Lliçó central | Prova o experiència que la transmet | Resistència del protagonista | ' +
+        'Transformació (parcial o completa) al final del cicle.\n\n' +
+        '## CRISIS EPISTEMOLÒGIQUES\n' +
+        'Identifica els 3-4 moments de crisi en els quals el protagonista qüestiona tot el que ' +
+        'creia saber. Per a cada crisi: Detonant | Durada narrativa | Resolució (acceptació / ' +
+        'rebuig / síntesi) | Implicació per al cicle següent.';
+    }
+  }
+
+  var numFilsStr = perfil ? String(perfil.estructura.numFilsNarratius) : '1';
+  var numCapsStr = perfil ? perfil.estructura.numCapitolsRecomanat : '18-24';
+
+  var userContent =
+    '=== EL CONTE ORIGINAL ===\n' + conteActual + '\n\n---\n\n' +
+    'Ets un arquitecte narratiu especialitzat en expandir contes curts a novel·les. ' +
+    'El conte anterior és el nucli de la futura novel·la. La teva tasca és generar un ' +
+    'ESQUELET D\'EXPANSIÓ que identifiqui tots els elements nous necessaris per transformar-lo ' +
+    'en una obra de ' + numCapsStr + ' capítols, mantenint fidelitat estricta a la veu, ' +
+    'els temes i els personatges del conte original.\n' +
+    'Estil de referència: ' + (estilDesc || tematica || 'genèric') +
+    instruccionsEspecifiques + '\n\n' +
+    'Genera el document estructurat EXACTAMENT amb les seccions següents:\n\n' +
+    '## FILS NARRATIUS PRINCIPALS\n' +
+    'Identifica ' + numFilsStr + ' fil(s) narratiu(s) que emergeixin del conte original. ' +
+    'Per a cada fil: Nom del fil | Protagonista | Punt de partida (del conte) | ' +
+    'Arc d\'expansió (on ha d\'arribar a la novel·la) | Capítols clau estimats\n\n' +
+    '## GIRS NARRATIUS OBLIGATORIS\n' +
+    'Genera entre 5 i 7 girs narratius calibrats a l\'estil ' + (perfil ? perfil.nom : 'de l\'autor') + '. ' +
+    'Per a cada gir: Posició (% de la novel·la) | Descripció del gir | Fil(s) afectat(s) | ' +
+    'Conseqüència narrativa directa | Com ja estava latent al conte original\n\n' +
+    '## SUBTRAMES\n' +
+    'Proposa entre 4 i 6 subtrames que enriqueixin la trama principal. ' +
+    'Per a cada subtrama: Títol breu | Personatge/s implicats | Punt d\'ancoratge al conte original | ' +
+    'Inici (capítol estimat) | Resolució (capítol estimat) | Funció respecte la trama principal\n\n' +
+    '## EXPANSIONS DE MÓN NECESSÀRIES\n' +
+    'Llista màxim 6 elements de món que cal definir per sostenir la novel·la. ' +
+    'Format: Element — Raó narrativa — Grau de detall necessari (alt/mig/baix)\n\n' +
+    '## LLAVORS DE PERSONATGES NOUS\n' +
+    'Suggereix entre 3 i 5 personatges nous que el conte original no tenia. ' +
+    'Per a cada un: Nom provisional | Rol a la trama | Connexió amb el nucli original | ' +
+    'Subtrama pròpia (si n\'hi ha)\n\n' +
+    '## TEMES EXPANDITS\n' +
+    'Identifica els temes del conte original i com s\'aprofundiran a la novel·la. ' +
+    '(2-4 temes, 2 línies cadascun)' +
+    seccionsExtra + '\n\n' +
+    'Respon DIRECTAMENT en català, sense introducció ni comentaris meta. ' +
+    'Usa els encapçalaments ## exactes indicats.';
+
+  const msgs     = [{ role: 'user', content: userContent }];
+  const response = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens: 4500 }));
+  return { response: response };
+}
+
 // ─── FASE 7: Worldbuilding — Extracció d'elements de món ───
 function fase7_worldbuilding(conteActual, tematica, estilDesc, history, userConfig) {
   const msgs = [
@@ -784,9 +895,13 @@ function fase7_expandirElements(elementsTriats, conteActual, tematica, history, 
 }
 
 // ─── FASE 8: Elenc de personatges per a la novel·la ─────────
-function fase8_elenc(conteActual, worldbuilding, tematica, estilDesc, history, userConfig) {
+function fase8_elenc(conteActual, worldbuilding, tematica, estilDesc, history, userConfig, esqueletNovela) {
   const contextMon = worldbuilding
     ? '\n\nBíblia de món disponible:\n' + worldbuilding
+    : '';
+
+  const contextEsquelet = esqueletNovela
+    ? '\n\nESQUELET D\'EXPANSIÓ (fils, girs i llavors de personatges):\n' + esqueletNovela.substring(0, 2000)
     : '';
 
   var perfil = getPerfilAutor(tematica);
@@ -831,7 +946,7 @@ function fase8_elenc(conteActual, worldbuilding, tematica, estilDesc, history, u
     ...history,
     {
       role: 'user',
-      content: 'A partir del conte i del món creat, genera l\'elenc de 8 personatges per a la novel·la. Inclou els personatges que ja apareixen al conte (adaptats a la seva versió novel·lística) i afegeix-ne de nous necessaris per a una trama de major abast.' + contextMon + instruccionsElenc + instruccionsAntagonista + '\n\nCada personatge ha de tenir:\n- Una funció clara a la trama principal o a les subtrames\n- Un desig conscient i un temor ocult que generin tensió\n- Un arc de transformació creïble (on comença → on acaba)\n- Relacions concretes amb altres personatges de l\'elenc\n\nMarca amb (Recomanat) els 5 personatges més essencials per a la novel·la.\n\nFormat ESTRICTE (8 personatges, res més, sense cap introducció):\n1. **[Nom, edat]** | Rol: [funció a la trama] | Desig: [el que vol conscientment] | Temor: [el que l\'aterroritza o amaga] | Arc: [on comença → on acaba] | Veu: [tret narratiu o tic que el fa distintiu] | Relacions: [amb qui i com]\n2. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n3. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n4. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n5. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n6. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n7. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n8. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]'
+      content: 'A partir del conte i del món creat, genera l\'elenc de 8 personatges per a la novel·la. Inclou els personatges que ja apareixen al conte (adaptats a la seva versió novel·lística) i afegeix-ne de nous necessaris per a una trama de major abast.' + contextMon + contextEsquelet + instruccionsElenc + instruccionsAntagonista + '\n\nCada personatge ha de tenir:\n- Una funció clara a la trama principal o a les subtrames\n- Un desig conscient i un temor ocult que generin tensió\n- Un arc de transformació creïble (on comença → on acaba)\n- Relacions concretes amb altres personatges de l\'elenc\n\nMarca amb (Recomanat) els 5 personatges més essencials per a la novel·la.\n\nFormat ESTRICTE (8 personatges, res més, sense cap introducció):\n1. **[Nom, edat]** | Rol: [funció a la trama] | Desig: [el que vol conscientment] | Temor: [el que l\'aterroritza o amaga] | Arc: [on comença → on acaba] | Veu: [tret narratiu o tic que el fa distintiu] | Relacions: [amb qui i com]\n2. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n3. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n4. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n5. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n6. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n7. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n8. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]'
     }
   ];
   const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens: 4096 }));
@@ -843,7 +958,7 @@ function fase8_elenc(conteActual, worldbuilding, tematica, estilDesc, history, u
 // Genera un resum de ~600 paraules màxim amb tot el decidit.
 // Evita enviar textos llargs bruts al LLM: comprimeix worldbuilding
 // i elenc a 1 línia per element/personatge.
-function comprimirContext(tematica, estilDesc, worldbuilding, elencPersonatges) {
+function comprimirContext(tematica, estilDesc, worldbuilding, elencPersonatges, esqueletNovela) {
   const parts = [];
 
   parts.push(`GÈNERE: ${tematica || '—'}`);
@@ -872,12 +987,32 @@ function comprimirContext(tematica, estilDesc, worldbuilding, elencPersonatges) 
     });
   }
 
+  if (esqueletNovela && esqueletNovela.trim()) {
+    parts.push('\nESQUELET DE NOVEL·LA:');
+    var lines = esqueletNovela.split('\n');
+    var inRellevant = false;
+    var count = 0;
+    lines.forEach(function(l) {
+      if (count >= 25) return;
+      if (/^##\s+(FILS NARRATIUS|GIRS NARRATIUS|SUBTRAMES|FIL A|XARXA ANT|TRES FILS|CICLES|CALENDARI)/.test(l)) {
+        inRellevant = true;
+        parts.push(l.trim());
+        count++;
+      } else if (/^##/.test(l)) {
+        inRellevant = false;
+      } else if (inRellevant && l.trim()) {
+        parts.push(l.trim().substring(0, 120));
+        count++;
+      }
+    });
+  }
+
   return parts.join('\n');
 }
 
 // ─── FASE 9: Estructura narrativa en actes ───────────────────
-function fase9_estructura(conteActual, worldbuilding, elencPersonatges, tematica, estilDesc, history, userConfig) {
-  const ctx = comprimirContext(tematica, estilDesc, worldbuilding, elencPersonatges);
+function fase9_estructura(conteActual, worldbuilding, elencPersonatges, tematica, estilDesc, history, userConfig, esqueletNovela) {
+  const ctx = comprimirContext(tematica, estilDesc, worldbuilding, elencPersonatges, esqueletNovela);
 
   var perfil = getPerfilAutor(tematica);
   var instruccionsEstructurals = '';
