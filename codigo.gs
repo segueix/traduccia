@@ -23,6 +23,292 @@ function doGet() {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+// ═══════════════════════════════════════════════════════════════
+// PERFILS D'AUTOR — Condicionen TOTES les fases del pipeline
+// ═══════════════════════════════════════════════════════════════
+
+var PERFILS_AUTOR = {
+
+  // ─────────────────────────────────────────────────────────
+  // STIEG LARSSON
+  // ─────────────────────────────────────────────────────────
+  'larsson': {
+    nom: 'Stieg Larsson',
+    etiqueta: 'Stieg Larsson — Millennium',
+
+    estructura: {
+      tipusOutline: 'dual_convergent',
+      descripcio: 'Dues línies narratives paral·leles (investigador + hacker/infiltrat) que convergeixen al punt mig. Primer acte inusualment llarg (~30% del total) dedicat a establir context social, institucional i burocràtic abans que el misteri arrenqui.',
+      distribucioActes: {
+        acte1_percentatge: 30,
+        acte1_instruccio: 'Establiment lent i deliberat. Context social, institucional, burocràtic. Presentar dos mons separats (el de l\'investigador i el del segon protagonista). No hi ha misteri encara — hi ha normalitat amb tensions latents. El lector ha de sentir la maquinària social sueca/escandinava com un personatge més.',
+        acte2_percentatge: 45,
+        acte2_instruccio: 'Les dues línies narratives comencen a entrellaçar-se. La investigació avança amb setmanes de treball documental, entrevistes, callejons sense sortida. Cada descobriment obre tres preguntes noves. La violència, quan apareix, és sobtada, breu i amb conseqüències reals — mai coreografiada.',
+        acte3_percentatge: 25,
+        acte3_instruccio: 'Convergència total de les dues línies. L\'investigador i el segon protagonista treballen junts (o en contra). Les revelacions cauen en cascada. El poder sistèmic es fa visible. Resolució que deixa fils oberts per a continuació — el sistema no cau, s\'exposa.'
+      },
+      numFilsNarratius: 2,
+      instruccioFils: 'Genera DOS fils narratius separats amb protagonistes propis. Fil A: investigador (periodista, policia, advocat) amb accés al poder oficial. Fil B: outsider (hacker, immigrant, activista) amb accés al poder ocult. Cada fil ha de tenir 3-4 escenes pròpies abans del primer encreuament. Marca al outline on convergeixen.',
+      midpoint: 'Les dues línies convergeixen per primera vegada. El protagonista A descobreix que el protagonista B existeix, o viceversa. Això canvia la naturalesa de la investigació — el que semblava un cas local es revela com a sistèmic.',
+      numCapitolsRecomanat: '18-24'
+    },
+
+    antagonisme: {
+      tipus: 'sistemic',
+      instruccio: 'L\'antagonista NO és una persona — és una XARXA de poder. Crea un sistema antagonista format per: (1) un rostre visible amb càrrec institucional que sembla respectable, (2) un operador a l\'ombra que fa la feina bruta, (3) almenys un còmplice involuntari o atemorit dins del sistema. Cap d\'ells es veu a si mateix com a "dolent". El rostre visible creu que protegeix l\'ordre social. L\'operador creu que segueix ordres legítimes. El còmplice té por de perdre-ho tot.',
+      complexitat: 'Cada antagonista necessita: una escena on mostri afecte genuí per algú (família, amic), una decisió on dubti, i una justificació interna que el lector pugui entendre (no compartir). L\'antagonista col·lectiu ha de funcionar com un organisme — quan cau una peça, les altres compensen.',
+      prohibicions: 'PROHIBIT: antagonistes amb motivació purament econòmica o per sadisme. PROHIBIT: escenes on l\'antagonista expliqui el seu pla a un presoner. PROHIBIT: antagonistes que actuïn de forma irracional per facilitar que el protagonista guanyi.'
+    },
+
+    protagonista: {
+      arquetipus: 'investigador_obsessiu',
+      instruccio: 'El protagonista és competent professionalment però disfuncional personalment. Té un codi ètic rigid que l\'aïlla socialment. No és un heroi: és algú que no pot deixar de tirar del fil encara que sap que hauria de parar. La seva motivació principal no és la justícia abstracta — és una compulsió personal (trauma, culpa, necessitat de control). Té defectes reals: addiccions funcionals, incapacitat de mantenir relacions, tendència a creuar límits ètics "pel bé major".',
+      arcNarratiu: 'Comença amb un fracàs recent o una pèrdua que l\'ha debilitat. La investigació el reactiva però també l\'exposa. Al punt mig, ha de decidir entre la seguretat personal i la veritat. Al final, guanya parcialment — exposa la xarxa però paga un preu personal alt.',
+      veuNarrativa: 'Tercera persona, focalització alternant entre els dos protagonistes. To sec, observacional, amb digressions sobre procediments i burocràcia que revelen el sistema social. Emoció continguda — mai sentimentalisme.'
+    },
+
+    clausura: {
+      tipus: 'exposicio_parcial',
+      instruccio: 'El sistema antagonista s\'exposa PARCIALMENT. Alguns culpables cauen, d\'altres sobreviuen. L\'article/informe/testimoni del protagonista és publicat però l\'impacte real és incert. El protagonista ha pagat un preu personal (relació trencada, salut, posició professional). El món no és significativament millor — el lector sap que la xarxa es reconstruirà.',
+      ultimaFrase: 'L\'última frase ha de ser quotidiana, gairebé banal — un gest ordinari que contrasta amb tot el que ha passat. La vida continua, el sistema continua, el protagonista continua. Sense grandiositat.',
+      prohibicions: 'PROHIBIT: final feliç convencional. PROHIBIT: justícia poètica. PROHIBIT: monòleg interior reflexiu del protagonista sobre "el que ha après". PROHIBIT: epíleg que expliqui què va passar després amb cada personatge.'
+    },
+
+    estil: {
+      systemPrompt: 'Ets un escriptor en l\'estil de Stieg Larsson: prosa funcional, seca, sense ornamentació. Les frases són curtes quan descriuen accions, llargues quan descriuen sistemes burocràtics o institucionals. El detall tècnic (informàtic, financer, legal, periodístic) és precís i integrat — mai explicat al lector com a classe magistral. Les descripcions físiques dels personatges inclouen sempre què mengen, què beuen i com vesteixen — són indicadors de classe social, no decoració. El sexe, quan apareix, és directe i sense romanticisme. La violència és sobtada, bruta, amb conseqüències físiques reals (dolor, recuperació, seqüeles). L\'humor és inexistent o extremadament sec — mai còmic. Escrius EXCLUSIVAMENT en català. Mai inclous paraules, frases ni comentaris en anglès o cap altra llengua. Mai afegeixes notes meta, indicacions de número de part ni cap text fora de la narració literària. Escriu directament el text.',
+      registre: 'Neutre-fred. Registre periodístic amb incrustacions de vocabulari tècnic específic del camp de la investigació. Cap adjectiu supèrflu. Les metàfores, si n\'hi ha, són mecàniques o urbanes — mai naturals ni líriques.',
+      ritme: 'Alternança entre escenes llargues de treball (investigació, documentació, hacking) i escenes curtes d\'impacte (descobriment, violència, revelació). Les escenes de treball són detallades i procedimentals — el lector ha de sentir el pes del temps que la investigació requereix.',
+      dialeg: 'Funcional, sovint tècnic. Els personatges parlen per comunicar informació, no per expressar emocions. Quan hi ha emoció, es manifesta per l\'absència: frases tallades, canvis de tema, silencis. Cap personatge fa discursos. Les converses professionals són realistes — amb interrupcions, malentesos, reformulacions.'
+    },
+
+    antipatrons: [
+      'PROHIBIT repetir la mateixa metàfora (fred/formigó/vidre/foscor/glaç) més de 2 vegades per capítol. Usa alternatives sensorials variades: sons mecànics, olors urbanes, textures de paper/plàstic, llum artificial.',
+      'PROHIBIT que els personatges articulin en veu alta allò que senten. Diàlegs oblics amb subtext — el lector dedueix l\'emoció per accions i omissions.',
+      'PROHIBIT tancar capítols amb la mateixa estructura sintàctica. Cada tancament ha de tenir un recurs retòric diferent.',
+      'PROHIBIT sentimentalisme. Cap personatge plora, s\'abraça emocionalment, o té revelacions emocionals. Les emocions són indicades per conductes: beure més, dormir menys, cancel·lar cites.',
+      'PROHIBIT acció coreografiada. La violència és caòtica, ràpida, desorientadora — mai estilitzada.',
+      'PROHIBIT explicar motivacions dels antagonistes directament. Que es revelin per les seves decisions i contradiccions.',
+      'Màxim 2 termes tècnics per paràgraf, integrats amb naturalitat.'
+    ]
+  },
+
+  // ─────────────────────────────────────────────────────────
+  // J.R.R. TOLKIEN
+  // ─────────────────────────────────────────────────────────
+  'tolkien': {
+    nom: 'J.R.R. Tolkien',
+    etiqueta: 'J.R.R. Tolkien — Alta Fantasia Èpica',
+
+    estructura: {
+      tipusOutline: 'interlace_multigrupo',
+      descripcio: 'Entrellaçament (interlace) de múltiples grups de personatges separats geogràficament. Capítols que alternen entre grups. La tensió no puja linealment sinó en onades paral·leles que convergeixen al clímax. Inici deliberat i domèstic que contrasta amb l\'escala èpica posterior.',
+      distribucioActes: {
+        acte1_percentatge: 25,
+        acte1_instruccio: 'Inici domèstic i íntim. Presenta el món ordinari dels protagonistes amb calidesa i detall sensorial (menjar, paisatge, estacions). La crida a l\'aventura arriba com una irrupció del món gran en el món petit. El protagonista és reticent. Hi ha un consell o reunió on s\'exposa l\'amenaça i es forma el grup.',
+        acte2_percentatge: 50,
+        acte2_instruccio: 'El grup es divideix en 2-3 subgrups amb missions complementàries. Cada subgrup afronta perills i aliats propis. Alterna capítols entre subgrups per crear tensió paral·lela. El paisatge canvia radicalment amb cada subgrup — bosc, muntanya, plana, ciutat, subterrani. Inclou almenys una derrota significativa i una aliança inesperada per subgrup.',
+        acte3_percentatge: 25,
+        acte3_instruccio: 'Convergència dels fils. Gran batalla o confrontació on cada subgrup aporta el que ha aconseguit. Victòria que és alhora triomf i pèrdua — el món es salva però mai tornarà a ser el que era. Retorn a casa transformat: el protagonista ha canviat però el món petit segueix igual.'
+      },
+      numFilsNarratius: 3,
+      instruccioFils: 'Genera 3 fils narratius separats geogràficament: Fil A (missió principal — el portador/heroi), Fil B (missió militar/política — el guerrer/rei), Fil C (missió secundària amb impacte inesperat — el savi/explorador). Marca al outline els capítols de cada fil i els punts exactes de convergència i separació.',
+      midpoint: 'Derrota o pèrdua major que divideix el grup. La missió sembla impossible. Cada subgrup rep informació parcial que només tindrà sentit quan convergeixi.',
+      numCapitolsRecomanat: '20-28'
+    },
+
+    antagonisme: {
+      tipus: 'cosmic_amb_agents',
+      instruccio: 'Antagonista dual: una Força Fosca distant i abstracta (mai visible directament) i els seus Agents tangibles. La Força és antiga, pacient, i corromp més que destrueix. Els Agents són: (1) un general/senyor de la guerra amb un codi d\'honor distorsionat, (2) un traïdor que va ser amic/aliat i va ser corromput per desig de poder o por, (3) criatures/exèrcits que són víctimes tant com amenaces — races senceres esclavitzades o corrompudes.',
+      complexitat: 'El traïdor ha de tenir una escena de dubte genuí — un moment on el lector vegi la persona que era abans de la caiguda. El general ha de mostrar respecte per un enemic o compassió per un subordinat. Les criatures antagonistes han de tenir cultura pròpia, no ser massa indiferenciada.',
+      prohibicions: 'PROHIBIT: antagonistes que siguin malvats per ser malvats sense cap matís. PROHIBIT: el Senyor Fosc apareix i parla com un supervilà de pel·lícula. PROHIBIT: la corrupció de la Força és instantània — sempre és gradual i seductora. PROHIBIT: races senceres categòricament malvades sense excepció.'
+    },
+
+    protagonista: {
+      arquetipus: 'el_petit_que_porta_la_carrega',
+      instruccio: 'El protagonista principal no és el més fort ni el més savi — és el més ordinari. La seva força ve de la bondat quotidiana, la lleialtat i una resistència moral que ningú esperava. No vol ser heroi. No entén del tot la magnitud del que fa. Té un company lleial que és tan important com ell. Els personatges guerrers i savis són impressionants però fal·libles — la seva grandesa inclou errors de judici i orgull.',
+      arcNarratiu: 'El protagonista petit comença amb por però avança per deure. Al punt mig, el pes de la missió el trenca parcialment — dubta, es cansa, sent la temptació de rendir-se. Al clímax, fa l\'últim esforç no per heroisme sinó perquè no pot viure amb si mateix si no ho fa. Al final, la victòria el marca permanentment — ja no encaixa al món petit.',
+      veuNarrativa: 'Tercera persona omniscient amb modulació de registre per escena. Registre elevat per a reis i elfs (frases llargues, vocabulari arcaic, ritme solemne). Registre col·loquial per a hobbits/gent petita (frases curtes, humor, queixes sobre menjar). Registre dur i pragmàtic per a nans/guerrers. El narrador té veu pròpia: erudita, amb pauses reflexives i digressions sobre la història del món.'
+    },
+
+    clausura: {
+      tipus: 'victoria_elegiaca',
+      instruccio: 'La victòria es guanya amb un preu irreversible. El món es salva però una era acaba — alguna cosa bella i antiga desapareix per sempre. El protagonista torna a casa transformat i descobreix que ja no hi encaixa. El retorn ocupa almenys un capítol sencer — no és epíleg, és part essencial de la història.',
+      ultimaFrase: 'L\'última frase ha de ser íntima i domèstica — un retorn al món petit. Però amb una nota de melangia: el protagonista sap que el que ha vist i perdut no es pot compartir.',
+      prohibicions: 'PROHIBIT: final purament triomfant sense cost. PROHIBIT: discurs motivacional del protagonista. PROHIBIT: que tots els personatges sobrevisquin. PROHIBIT: resolució que invalidi el sacrifici — si algú es va sacrificar, no pot ressuscitar.'
+    },
+
+    estil: {
+      systemPrompt: 'Ets un escriptor en l\'estil de J.R.R. Tolkien: prosa rica, musical, amb atenció extrema al paisatge com a reflex de l\'estat emocional i moral de l\'escena. Les descripcions de la natura no són decoració — són narració. Un bosc pot ser amenaçador, protector o trist. Les muntanyes tenen personalitat. Les estacions marquen el to. La prosa alterna entre registres: elevat per a moments solemnes (consells, juraments, batalles), quotidià per a moments íntims (àpats, bromes, cançons). Les cançons i poemes integrats són part de la cultura dels personatges — cada poble té el seu estil líric. El mal no es descriu amb adjectius sinó amb efectes: silenci dels ocells, foscor que pesa, fred que puja des de la terra. Escrius EXCLUSIVAMENT en català. Mai inclous paraules, frases ni comentaris en anglès o cap altra llengua. Mai afegeixes notes meta, indicacions de número de part ni cap text fora de la narració literària. Escriu directament el text.',
+      registre: 'Multiregistre. Adaptat a la cultura del focus narratiu. Registre alt per a escenes cerimonials i discursos. Registre mitjà per a aventura i viatge. Registre baix i càlid per a escenes domèstiques. El vocabulari ha de ser ric però precís — cada paraula triada per la seva sonoritat.',
+      ritme: 'Onades llargues. Capítols de viatge amb ritme contemplatiu que accelera sobtadament en perill. Escenes de batalla curtes i confuses (no coreografiades). Escenes de descans i àpat detallades i reconfortants — el lector ha de desitjar ser-hi.',
+      dialeg: 'Cada cultura parla diferent. Els elfs: frases llargues, elegants, amb dolor contingut. Els nans: directes, orgullosos, amb humor sec. La gent petita: col·loquials, queixosos, afectuosos. Els reis: formals, amb pes de responsabilitat a cada paraula. Cap personatge parla com un altre — la veu és identitat cultural.'
+    },
+
+    antipatrons: [
+      'PROHIBIT abusar de "les tenebres" o "la foscor" com a recurs. Varia: silenci dels ocells, pes de l\'aire, fred que puja, canvi de llum, olor de descomposició.',
+      'PROHIBIT que els personatges parlin tots en el mateix registre. Cada poble/cultura té ritme, vocabulari i longitud de frase propis.',
+      'PROHIBIT descriure el mal amb adjectius ("terrible", "malèfic", "fosc"). Mostra\'l amb efectes físics concrets sobre l\'entorn i els personatges.',
+      'PROHIBIT batalles llargues coreografiades cop a cop. Les batalles són caos: confusió, por, instants de valor, desorientació.',
+      'PROHIBIT paisatges decoratius. Cada descripció de paisatge ha de comunicar informació narrativa o emocional — si la pots eliminar sense perdre res, no hi ha de ser.',
+      'PROHIBIT que el protagonista petit parli com un rei o un savi. Ha de mantenir el registre ordinari fins i tot en moments èpics.',
+      'PROHIBIT introduir races o pobles com a monolit cultural. Fins i tot dins d\'un grup, hi ha variació individual.'
+    ]
+  },
+
+  // ─────────────────────────────────────────────────────────
+  // PHILIP K. DICK
+  // ─────────────────────────────────────────────────────────
+  'dick': {
+    nom: 'Philip K. Dick',
+    etiqueta: 'Philip K. Dick — Ciència-ficció ontològica',
+
+    estructura: {
+      tipusOutline: 'degradacio_progressiva',
+      descripcio: 'Estructura de degradació ontològica: la realitat es trenca per capes. Els primers capítols estableixen una normalitat aparent, i progressivament s\'introdueixen dubtes que s\'acumulen fins que ni el protagonista ni el lector poden distingir què és real.',
+      distribucioActes: {
+        acte1_percentatge: 25,
+        acte1_instruccio: 'NORMALITAT APARENT. Presenta un món futurista o alternatiu que funciona amb regles clares. El protagonista és una persona corrent amb una feina, rutines, relacions. Tot sembla coherent. Introdueix UN detall que no encaixa — petit, gairebé imperceptible, que el protagonista descarta. El lector atent el nota.',
+        acte2_percentatge: 50,
+        acte2_instruccio: 'DEGRADACIÓ ACUMULATIVA. Segueix el calendari de degradació: primer, un segon detall estrany amb explicació racional plausible però no del tot satisfactòria. Després, les anomalies s\'acceleren — algú sap alguna cosa que no hauria de saber, un objecte canvia, un record no quadra. Primer trencament ontològic: una certesa fonamental cau. Reconstrucció provisional: el protagonista construeix una nova interpretació. Falsa estabilitat.',
+        acte3_percentatge: 25,
+        acte3_instruccio: 'COL·LAPSE I AMBIGÜITAT. La nova interpretació també cau. El protagonista és forçat a actuar sense saber què és real. La decisió final és moral, no epistemològica: actua basant-se en valors (compassió, dignitat, amor) perquè no pot basar-se en fets. El final NO resol l\'ambigüitat — el lector ha de decidir per si mateix.'
+      },
+      numFilsNarratius: 1,
+      instruccioFils: 'UN sol fil narratiu centrat en el protagonista. La fragmentació ve de DINS, no d\'alternar entre personatges. Genera un CALENDARI DE DEGRADACIÓ explícit a l\'outline: en quin capítol es trenca cada certesa, en quin es reconstrueix provisionalment, en quin cau definitivament.',
+      midpoint: 'PRIMERA RUPTURA ONTOLÒGICA. El protagonista descobreix que alguna cosa fonamental del seu món (identitat, memòria, naturalesa de la realitat, relacions) no és el que creia. Però la veritat que descobreix podria ser una altra capa d\'il·lusió.',
+      numCapitolsRecomanat: '14-20'
+    },
+
+    antagonisme: {
+      tipus: 'ontologic_ambigu',
+      instruccio: 'L\'antagonista és AMBIGU per naturalesa: pot ser una corporació, un sistema, una entitat, o la pròpia ment del protagonista. El lector mai ha d\'estar segur de qui o què és realment l\'enemic. Crea: (1) una figura d\'autoritat que controla informació i que pot ser protectora o manipuladora — el lector no ho sap, (2) un sistema (corporatiu, governamental, tecnològic) que funciona amb lògica pròpia amoralment, (3) la possibilitat que el protagonista sigui el seu propi antagonista.',
+      complexitat: 'La figura d\'autoritat ha de fer almenys una cosa genuïnament bona i una de genuïnament inquietant. El lector ha de poder construir dues interpretacions vàlides: una on és aliat i una on és enemic. El sistema no és malvat — és indiferent, i la indiferència és pitjor.',
+      prohibicions: 'PROHIBIT: corporació/govern que és purament malvat amb plans de dominació. PROHIBIT: "plot twist" on es revela que el protagonista estava boig i tot era imaginació. PROHIBIT: explicació final que tanqui totes les ambigüitats. PROHIBIT: aliens o IA com a villains convencionals.'
+    },
+
+    protagonista: {
+      arquetipus: 'persona_corrent_atrapada',
+      instruccio: 'El protagonista és una persona absolutament ordinària: treballador, amb problemes quotidians (factures, relacions, salut), sense habilitats especials. No és especialment intel·ligent, valent ni carismàtic. El que el fa protagonista és que no pot deixar de qüestionar — és honestament incòmode amb les inconsistències quan tothom al seu voltant les accepta.',
+      arcNarratiu: 'Comença amb rutina gris. Un detall el desestabilitza. Investiga per necessitat, no per heroisme. A mesura que la realitat es degrada, ha de decidir en què creure. Al final, la seva humanitat (empatia, amor, dignitat) és l\'única brúixola que funciona quan els fets fallen.',
+      veuNarrativa: 'Tercera persona propera, quasi primera persona. Accés constant als pensaments del protagonista — fluxe de consciència funcional, no experimental. To neuròtic, amb digressions sobre preocupacions mundanes enmig de crisis existencials. Humor negre involuntari: el protagonista pensa en la hipoteca mentre el món s\'ensorra.'
+    },
+
+    clausura: {
+      tipus: 'ambiguitat_deliberada',
+      instruccio: 'El final NO resol l\'ambigüitat central. El protagonista pren una decisió basada en valors humans (compassió, amor, dignitat) perquè no pot basar-se en fets. El lector ha de poder construir almenys DUES interpretacions coherents del que ha passat. Una pista final — un detall, un objecte, una frase — pot inclinar cap a una interpretació, però mai confirmar-la.',
+      ultimaFrase: 'L\'última frase ha de ser un detall concret i petit — un objecte, un gest, una sensació física — que reverberi amb significat ambigu. El lector ha de quedar-se pensant.',
+      prohibicions: 'PROHIBIT: resolució clara de què era real i què no. PROHIBIT: "era tot un somni/simulació" com a revelació final. PROHIBIT: el protagonista "entén" finalment la veritat. PROHIBIT: epíleg explicatiu. PROHIBIT: final feliç o final completament desolador.'
+    },
+
+    estil: {
+      systemPrompt: 'Ets un escriptor en l\'estil de Philip K. Dick: prosa directa, nerviosa, amb un punt de ciència-ficció quotidiana. La tecnologia futurista es presenta com a banal — els personatges la usen com nosaltres usem el mòbil, sense fascinar-se\'n. Les descripcions de l\'entorn reflecteixen l\'estat mental del protagonista: quan dubta, l\'entorn es torna inestable (detalls que canvien, colors que no quadren, sons que no haurien de ser-hi). Barreja registres: diàleg col·loquial, monòleg interior neuròtic, descripcions tècniques fredes. El futurisme és decadent: la tecnologia és avançada però l\'entorn humà és depriment (pisos petits, menjar processat, relacions fallides). La sensació dominant és la d\'estar lleugerament fora de fase amb la realitat. Escrius EXCLUSIVAMENT en català. Mai inclous paraules, frases ni comentaris en anglès o cap altra llengua. Mai afegeixes notes meta, indicacions de número de part ni cap text fora de la narració literària. Escriu directament el text.',
+      registre: 'Col·loquial-neuròtic. El protagonista pensa en registre quotidià — preocupacions mundanes barrejades amb crisis ontològiques. El diàleg és naturalista, ple de frases a mitges i malentesos. Les escenes tècniques o institucionals tenen un registre burocràtic kafkià.',
+      ritme: 'Irregular. Escenes quotidianes llargues interrompudes per moments breus d\'estranyesa. Quan la degradació s\'accelera, el ritme es fragmenta: paràgrafs més curts, frases tallades, salt entre pensament i percepció. Al clímax, el ritme pot tornar-se lent i precís — calma inquietant.',
+      dialeg: 'Naturalista amb un punt d\'estranyesa. La gent parla com parla la gent real: interromp, canvia de tema, no escolta. Però de tant en tant, algú diu alguna cosa que sona "programada" o "guionitzada" — com si no fos del tot humà. El protagonista nota aquestes dissonàncies, els altres personatges no.'
+    },
+
+    antipatrons: [
+      'PROHIBIT explicar la tecnologia amb infodumps. La tecnologia és mundana — es mostra usant-se, no explicant-se.',
+      'PROHIBIT que les anomalies siguin espectaculars. Han de ser subtils, inquietants, quotidianes: un gat que era d\'un altre color, un carrer que ha canviat de nom, una persona que recorda una conversa diferent.',
+      'PROHIBIT que el protagonista sigui un heroi d\'acció. Quan hi ha perill físic, el protagonista reacciona com una persona normal: amb por, torpesa, fugida.',
+      'PROHIBIT resoldre l\'ambigüitat. Si el lector pot dir amb certesa "ah, era X", has fallat.',
+      'PROHIBIT paranoia cinematogràfica (persecucions, conspiracions amb "homes de negre"). La paranoia és quotidiana: mirades, frases ambigües, documents que desapareixen, records que no coincideixen.',
+      'PROHIBIT que els personatges secundaris siguin funcionals. Cada personatge té les seves pròpies preocupacions mundanes — no existeixen per servir la trama del protagonista.',
+      'PROHIBIT futorisme brillant. La tecnologia del futur és tan grisa com la del present.'
+    ]
+  },
+
+  // ─────────────────────────────────────────────────────────
+  // CARLOS CASTANEDA
+  // ─────────────────────────────────────────────────────────
+  'castaneda': {
+    nom: 'Carlos Castaneda',
+    etiqueta: 'Carlos Castaneda — Itinerari iniciàtic',
+
+    estructura: {
+      tipusOutline: 'cicles_iniciatics',
+      descripcio: 'Estructura cíclica d\'aprenentatge, no actes clàssics. Cada cicle: ensenyament → rebuig → experiència transformadora → integració parcial. Cada cicle opera a un nivell de profunditat major. L\'estructura és espiral: els mateixos temes tornen però el protagonista els viu diferent.',
+      distribucioActes: {
+        acte1_percentatge: 20,
+        acte1_instruccio: 'TROBADA. El narrador-protagonista (escèptic, racional, occidental) troba el Mestre per circumstàncies aparentment casuals. El Mestre és excèntric, contradictori, desconcertant — pot semblar un farsant. El narrador observa amb distància irònica. El Mestre proposa un primer exercici o prova que el narrador descarta com a absurd — fins que alguna cosa inexplicable passa. El narrador racionalitza l\'experiència però queda enganxat.',
+        acte2_percentatge: 60,
+        acte2_instruccio: 'CICLES D\'APRENENTATGE (4-6 cicles). Cadascun: (1) ENSENYAMENT: concepte presentat amb paradoxes, humor i provocació; (2) RESISTÈNCIA: narrador racionalitza, discuteix, fracassa; (3) EXPERIÈNCIA: experiència directa que obliga a experimentar el que no es podia entendre; (4) INTEGRACIÓ PARCIAL: comprensió d\'un grau. Acumulatius: cada experiència és més profunda que l\'anterior.',
+        acte3_percentatge: 20,
+        acte3_instruccio: 'SALT. El narrador afronta una experiència definitiva que no pot racionalitzar ni integrar parcialment. Ha de triar: tornar al món racional (segur però mutilat) o acceptar una manera de ser al món radicalment diferent (terrificant però viva). El Mestre no l\'ajuda en aquesta decisió. El final és OBERT.'
+      },
+      numFilsNarratius: 1,
+      instruccioFils: 'UN sol fil narratiu: el narrador i el Mestre. Genera l\'outline com a SEQÜÈNCIA DE CICLES, no com a actes. Cada cicle és una unitat amb ensenyament, resistència, experiència i integració. El calendari d\'experiències ha de progressar en intensitat.',
+      midpoint: 'El narrador té la primera experiència que no pot racionalitzar DE CAP MANERA. No és una anomalia que pot explicar — és una ruptura de la seva cosmovisió. El narrador SENT la realitat de l\'experiència però la seva ment no l\'accepta.',
+      numCapitolsRecomanat: '16-22'
+    },
+
+    antagonisme: {
+      tipus: 'intern_epistemologic',
+      instruccio: 'NO hi ha antagonista extern. El conflicte és entre el narrador racional i l\'experiència directa. L\'antagonista és la pròpia ment del narrador: el seu escepticisme, la seva necessitat de control, la seva por a l\'inconegut. Pot haver-hi figures secundàries de perill (altres bruixots amb intencions ambigües, forces naturals o sobrenaturals), però no són "enemics" — són proves o miralls. El Mestre mateix és sovint l\'obstacle més gran: frustrant, contradictori, deliberadament provocador.',
+      complexitat: 'El Mestre no és un guru benèvol. Pot ser manipulador, dur, humorístic en moments inapropiats, aparentment cruel. El narrador ha de dubtar genuïnament de si el Mestre és un savi o un farsant — i el lector també.',
+      prohibicions: 'PROHIBIT: villains convencionals. PROHIBIT: el Mestre és sempre savi i bondadós — ha de ser desconcertant i moralment ambigu. PROHIBIT: forces sobrenaturals que funcionen com a enemics de videojoc. PROHIBIT: el narrador venç l\'antagonista — no hi ha res a vèncer, hi ha quelcom a comprendre.'
+    },
+
+    protagonista: {
+      arquetipus: 'aprenent_resistent',
+      instruccio: 'El protagonista-narrador és intel·lectual, escèptic, occidental, racional. Pren notes, analitza, classifica. Vol entendre el Mestre amb categories acadèmiques — i fracassa repetidament. La seva força és la seva honesta perplexitat: no fingeix entendre el que no entén. La seva debilitat és la seva resistència al canvi perceptiu — s\'aferra a la racionalitat com a salvavides.',
+      arcNarratiu: 'Comença com a observador extern. Gradualment es converteix en participant. Cada cicle el mou d\'escèptic passiu a experimentador actiu. Al final, la seva racionalitat no ha desaparegut — s\'ha expandit per incloure el que abans rebutjava.',
+      veuNarrativa: 'Primera persona reflexiva. El narrador escriu des del futur sobre experiències passades — per tant sap més del que sabia al moment, però no ho revela tot. To confessional, intel·lectual, amb moments d\'estupefacció genuïna. Alterna entre anàlisi racional (paràgrafs discursius) i descripció fenomenològica (sensacions, percepcions, sinestèsies).'
+    },
+
+    clausura: {
+      tipus: 'obertura_transformativa',
+      instruccio: 'El final és una porta, no un tancament. El narrador ha canviat irreversiblement — la seva percepció del real s\'ha ampliat — però el viatge continua. No hi ha "resposta" al misteri. El Mestre pot desaparèixer, morir, o simplement dir "ja no em necessites" — amb ambigüitat sobre si és un comiat definitiu o un nou ensenyament.',
+      ultimaFrase: 'L\'última frase ha de capturar un instant de percepció expandida — el narrador veu, sent o entén alguna cosa que al principi del llibre hauria descartat. Però ho diu amb naturalitat, sense grandiositat. Com si fos el més normal del món.',
+      prohibicions: 'PROHIBIT: el narrador assoleix la il·luminació total. PROHIBIT: el Mestre revela un "secret final" que ho explica tot. PROHIBIT: tornada a la normalitat com si res no hagués passat. PROHIBIT: moralitat explícita sobre què ha après el narrador.'
+    },
+
+    estil: {
+      systemPrompt: 'Ets un escriptor en l\'estil de Carlos Castaneda: prosa que alterna entre el discursiu-analític (el narrador pensant, classificant, racionalitzant) i el fenomenològic-sensorial (el narrador experimentant estats alterats de consciència amb detall sinestèsic extraordinari). El paisatge és el desert o medi àrid: llum excessiva, silenci, immensitat, plantes amb presència pròpia. Els diàlegs amb el Mestre són el motor: el Mestre parla amb paradoxes, humor, provocació — mai en línia recta. El to general és de meravella reluctant: el narrador s\'impressiona però no vol admetre-ho. Les experiències no-ordinàries es descriuen amb precisió clínica i detall sensorial extrem — colors, textures, sons, sensacions corporals que no tenen equivalent en l\'experiència quotidiana. Escrius EXCLUSIVAMENT en català. Mai inclous paraules, frases ni comentaris en anglès o cap altra llengua. Mai afegeixes notes meta, indicacions de número de part ni cap text fora de la narració literària. Escriu directament el text.',
+      registre: 'Dual. Registre analític-acadèmic quan el narrador reflexiona (vocabulari d\'antropologia, psicologia, filosofia occidental). Registre sensorial-poètic quan el narrador experimenta (sinestèsies, percepcions impossibles descrites amb precisió). El Mestre parla en registre col·loquial amb profunditat oculta — frases senzilles amb doble o triple sentit.',
+      ritme: 'Cicles llargs. Cada cicle comença lent (diàleg, reflexió, observació) i accelera cap a l\'experiència culminant. L\'experiència es descriu amb ritme alterat: frases molt curtes per a sensacions físiques, paràgrafs llargs i sinuosos per a percepcions expandides. Després de l\'experiència, el ritme torna a ser analític i pausat.',
+      dialeg: 'El Mestre: parla amb frases curtes, inesperables, sovint desconcertants. Mai respon directament una pregunta — la reformula, la contradiu, o riu. Usa històries curtes (paràboles) en comptes d\'explicacions. El narrador: fa preguntes de professor, vol definicions, classificacions, causes i efectes. El xoc entre els dos estils de conversa ÉS el motor del llibre.'
+    },
+
+    antipatrons: [
+      'PROHIBIT que el Mestre parli com un guru de xarxes socials: frases inspiracionals, positives, motivacionals. El Mestre és abrupte, humorístic i sovint enigmàtic.',
+      'PROHIBIT descriure experiències no-ordinàries amb termes vagues ("va sentir una energia", "va veure una llum"). Detall sensorial EXTREM: quin color, quina textura, quina temperatura, quin so, quina posició del cos.',
+      'PROHIBIT racionalitzar les experiències amb explicacions científiques. El narrador pot intentar-ho, però l\'explicació ha de fallar davant l\'experiència.',
+      'PROHIBIT que el narrador accepti els ensenyaments fàcilment. Ha de resistir, discutir, dubtar — genuïnament, no com a pose.',
+      'PROHIBIT misticisme genèric: cristalls, "energia universal", vocabulari esotèric buit. El coneixement del Mestre és específic, concret, pràctic — mai abstracte.',
+      'PROHIBIT narrar les experiències com a al·lucinacions: han de tenir coherència interna i lògica pròpia, encara que no sigui lògica racional.',
+      'PROHIBIT paisatges genèrics. El desert és un personatge: la llum a les 6 del matí és diferent de la de les 3 de la tarda. Les plantes tenen presència. El vent comunica.'
+    ]
+  }
+};
+
+// ─── Funció helper per obtenir el perfil actiu ───────────────
+function getPerfilAutor(tematica) {
+  var clau = (tematica || '').toLowerCase().trim();
+  var mapa = {
+    'larsson': 'larsson',
+    'stieg larsson': 'larsson',
+    'nordic noir': 'larsson',
+    'noir': 'larsson',
+    'millennium': 'larsson',
+    'tolkien': 'tolkien',
+    'jrr tolkien': 'tolkien',
+    'fantasia': 'tolkien',
+    'epica': 'tolkien',
+    'dick': 'dick',
+    'philip k dick': 'dick',
+    'pkd': 'dick',
+    'ciencia-ficcio': 'dick',
+    'scifi': 'dick',
+    'castaneda': 'castaneda',
+    'carlos castaneda': 'castaneda',
+    'inicatic': 'castaneda',
+    'xamanisme': 'castaneda'
+  };
+  var clauPerfil = mapa[clau] || null;
+  return clauPerfil ? PERFILS_AUTOR[clauPerfil] : null;
+}
+
 // ─── Crida genèrica a LLM ──────────────────────────────────
 function callLLM(messages, systemPrompt, config) {
   const safeConfig = config || {};
@@ -186,50 +472,14 @@ RESTRICCIONS GENERALS:
 → Diàlegs oblics: els personatges mai diuen literalment el que senten. Mostren-ho amb accions, silencis i subtextos.
 → Cada tancament de secció o capítol ha d'usar un recurs retòric diferent. Mai repeteixis l'estructura de clausura.`;
 
-// ─── System prompt dinàmic per gènere ──────────────────────
+// ─── System prompt dinàmic per perfil d'autor ───────────────
 function getSystemPrompt(tematica) {
-  const isNoir    = tematica && /noir|negr[ae]|nòrdi/i.test(tematica);
-  const isTolkien = tematica && /fantàstic|fantastic/i.test(tematica);
-
-  if (isNoir) {
-    return SYSTEM_DEFAULT + `
-
-── ESTIL NORDIC NOIR (Stieg Larsson) ──
-Prosa crua, directa i atmosfèrica: frases netes sense ornaments, carregades de tensió latent.
-To fred i opressiu: l'entorn nòrdic (hivern, foscor, aïllament geogràfic) actua com a personatge.
-Temàtiques centrals: corrupció institucional, violència sistèmica, secrets familiars soterrats, fallades de l'estat.
-Procediments detallats i creïbles: investigació policial o periodística amb lògica interna sòlida.
-Crítica social integrada a la trama, mai com a discurs extern o didàctic.
-Protagonistes durs i traumatitzats amb una tenacitat quasi obsessiva: la ferida personal impulsa la investigació.
-Estructura de revelació progressiva: el que semblava un cas puntual destapa un sistema podrit.
-Ritme pausat i metòdic en la investigació, però amb pics d'acció breu i brutal.
-
-RESTRICCIONS ESTILÍSTIQUES OBLIGATÒRIES:
-→ PROHIBIT repetir la mateixa metàfora (fred/formigó/vidre/foscor/glaç) més de 2 vegades per capítol. Usa alternatives sensorials variades: sons, olors, textures, llum, pes.
-→ PROHIBIT que els personatges articulin en veu alta allò que senten. Els diàlegs han de ser oblics, amb subtext. El lector ha de deduir l'emoció per les accions i les omissions, mai per declaracions directes.
-→ PROHIBIT tancar capítols amb la mateixa estructura sintàctica (p.ex. "la foscor l'engolia" o variants). Cada tancament de capítol ha de tenir una estructura i un recurs retòric diferent.
-→ Els antagonistes han de mostrar almenys un moment de vulnerabilitat, dubte o contradicció interna per capítol en què apareguin. Mai poden ser funcions narratives planes.
-→ El vocabulari tècnic (policial, forense, informàtic) s'ha d'integrar amb naturalitat, mai com a catàleg enciclopèdic. Màxim 2 termes tècnics per paràgraf.`;
+  var perfil = getPerfilAutor(tematica);
+  if (perfil) {
+    var antipatrons = '\n\nRESTRICCIONS ESTILÍSTIQUES OBLIGATÒRIES:\n' +
+      perfil.antipatrons.map(function(a) { return '→ ' + a; }).join('\n');
+    return perfil.estil.systemPrompt + antipatrons;
   }
-
-  if (isTolkien) {
-    return SYSTEM_DEFAULT + `
-
-── ESTIL J.R.R. TOLKIEN ──
-Prosa èpica, lírica i detallada: les descripcions del paisatge i el món transmeten profunditat i antiguitat immemorial.
-Univers tolkienià: situa la història a la Terra Mitjana o en un món de fantasia directament inspirat en el seu llegat. Incorpora races com els Eldar (elfs), els Khazad (nans), els hobits, els homes, els orcs, els ents o altres criatures del bestiari tolkienià. Els noms propis han de tenir la fonologia i el registre del corpus tolkienià.
-Temes centrals: la corrupció del poder, el pes de la responsabilitat, la camaraderia i la lleialtat, la lluita entre la llum i les tenebres, la bellesa efímera davant el pas implacable del temps i l'oblit.
-Llenguatge solemne però accessible: frases llargues i rítmiques, ús mesurat de construccions arcaiques, incorporació de cançons, rimes o fragments en llengua inventada quan l'escena ho demana.
-Ambientació concreta i grandiosa: paisatges amb nom i caràcter propi (boscos immòbils, muntanyes impassibles, torres de pedra negra, planes interminables), detalls arquitectònics i culturals que evoquen civilitzacions antigues amb història pròpia.
-La natura com a presència viva: arbres, rius i terres no són decorat sinó actors amb memòria, voluntat i opinió.
-El mal té pes físic: no s'explica, es percep en l'aire que s'espesseix, en la llum que s'apaga, en el silenci sobtat dels ocells i la por als ulls dels animals.
-
-RESTRICCIONS ESTILÍSTIQUES:
-→ PROHIBIT abusar de "les tenebres" o "la foscor" com a recurs de clausura. Varia les imatges: silenci dels ocells, pes de l'aire, fred que puja des de la terra, canvi de llum.
-→ Els discursos dels personatges han de tenir veus diferenciades: un elf no parla com un nan ni com un hobbit. Cadascú té ritme, vocabulari i longitud de frase propis.
-→ El mal no s'explica amb adjectius ("terrible", "fosc", "malèfic") sinó amb efectes físics concrets sobre l'entorn i els personatges.`;
-  }
-
   return SYSTEM_DEFAULT;
 }
 
@@ -536,13 +786,52 @@ function fase7_expandirElements(elementsTriats, conteActual, tematica, history, 
 // ─── FASE 8: Elenc de personatges per a la novel·la ─────────
 function fase8_elenc(conteActual, worldbuilding, tematica, estilDesc, history, userConfig) {
   const contextMon = worldbuilding
-    ? `\n\nBíblia de món disponible:\n${worldbuilding}`
+    ? '\n\nBíblia de món disponible:\n' + worldbuilding
     : '';
+
+  var perfil = getPerfilAutor(tematica);
+  var instruccionsElenc = '';
+  var instruccionsAntagonista = '';
+
+  if (perfil) {
+    instruccionsElenc =
+      '\n\n=== INSTRUCCIONS D\'ELENC PER A ' + perfil.nom.toUpperCase() + ' ===\n' +
+      'PROTAGONISTA (' + perfil.protagonista.arquetipus + '):\n' +
+      perfil.protagonista.instruccio + '\n' +
+      'Arc narratiu: ' + perfil.protagonista.arcNarratiu;
+
+    // Tractament especial per a Castaneda: no forçar antagonista extern
+    if (perfil.antagonisme.tipus === 'intern_epistemologic') {
+      instruccionsAntagonista =
+        '\n\nTIPUS D\'ANTAGONISME (intern-epistemològic):\n' +
+        perfil.antagonisme.instruccio + '\n' +
+        'Complexitat: ' + perfil.antagonisme.complexitat + '\n' +
+        perfil.antagonisme.prohibicions + '\n\n' +
+        'NOTA: NO generis un antagonista extern convencional. L\'elenc ha de tenir:\n' +
+        '(1) El Mestre: figura guia moralment ambigua\n' +
+        '(2) El Narrador-protagonista amb la seva resistència interna com a conflicte principal\n' +
+        '(3) Figures secundàries ambigües (altres aprenents, figures de poder)';
+    } else {
+      instruccionsAntagonista =
+        '\n\nTIPUS D\'ANTAGONISME (' + perfil.antagonisme.tipus + '):\n' +
+        perfil.antagonisme.instruccio + '\n' +
+        'Complexitat requerida: ' + perfil.antagonisme.complexitat + '\n' +
+        perfil.antagonisme.prohibicions;
+    }
+  } else {
+    instruccionsAntagonista =
+      '\n\nINSTRUCCIÓ CRÍTICA PER ALS ANTAGONISTES:\n' +
+      '→ L\'elenc ha d\'incloure almenys 1 antagonista principal i 1 antagonista secundari.\n' +
+      '→ L\'antagonista principal HA DE tenir una motivació que el lector pugui entendre o fins i tot empatitzar.\n' +
+      '→ L\'antagonista NO POT ser una funció narrativa plana. Ha de tenir un arc propi, pèrdues i contradiccions internes.\n' +
+      '→ Indica explícitament al camp "Rol" si el personatge és antagonista.';
+  }
+
   const msgs = [
     ...history,
     {
       role: 'user',
-      content: `A partir del conte i del món creat, genera l'elenc de 8 personatges per a la novel·la. Inclou els personatges que ja apareixen al conte (adaptats a la seva versió novel·lística) i afegeix-ne de nous necessaris per a una trama de major abast.${contextMon}\n\nCada personatge ha de tenir:\n- Una funció clara a la trama principal o a les subtrames\n- Un desig conscient i un temor ocult que generin tensió\n- Un arc de transformació creïble (on comença → on acaba)\n- Relacions concretes amb altres personatges de l'elenc\n\nINSTRUCCIÓ CRÍTICA PER ALS ANTAGONISTES:\n→ L'elenc ha d'incloure almenys 1 antagonista principal i 1 antagonista secundari.\n→ L'antagonista principal HA DE tenir una motivació que el lector pugui entendre o fins i tot empatitzar. Ha de creure sincerament que fa el correcte, o estar atrapat en un dilema real amb costos personals.\n→ L'antagonista NO POT ser una funció narrativa plana (el "dolent"). Ha de tenir un arc propi, pèrdues i contradiccions internes.\n→ Indica explícitament al camp "Rol" si el personatge és antagonista.\n\nMarca amb (Recomanat) els 5 personatges més essencials per a la novel·la.\n\nFormat ESTRICTE (8 personatges, res més, sense cap introducció):\n1. **[Nom, edat]** | Rol: [funció a la trama] | Desig: [el que vol conscientment] | Temor: [el que l'aterroritza o amaga] | Arc: [on comença → on acaba] | Veu: [tret narratiu o tic que el fa distintiu] | Relacions: [amb qui i com]\n2. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n3. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n4. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n5. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n6. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n7. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n8. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]`
+      content: 'A partir del conte i del món creat, genera l\'elenc de 8 personatges per a la novel·la. Inclou els personatges que ja apareixen al conte (adaptats a la seva versió novel·lística) i afegeix-ne de nous necessaris per a una trama de major abast.' + contextMon + instruccionsElenc + instruccionsAntagonista + '\n\nCada personatge ha de tenir:\n- Una funció clara a la trama principal o a les subtrames\n- Un desig conscient i un temor ocult que generin tensió\n- Un arc de transformació creïble (on comença → on acaba)\n- Relacions concretes amb altres personatges de l\'elenc\n\nMarca amb (Recomanat) els 5 personatges més essencials per a la novel·la.\n\nFormat ESTRICTE (8 personatges, res més, sense cap introducció):\n1. **[Nom, edat]** | Rol: [funció a la trama] | Desig: [el que vol conscientment] | Temor: [el que l\'aterroritza o amaga] | Arc: [on comença → on acaba] | Veu: [tret narratiu o tic que el fa distintiu] | Relacions: [amb qui i com]\n2. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n3. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n4. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n5. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n6. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n7. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n8. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]'
     }
   ];
   const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens: 4096 }));
@@ -590,14 +879,30 @@ function comprimirContext(tematica, estilDesc, worldbuilding, elencPersonatges) 
 function fase9_estructura(conteActual, worldbuilding, elencPersonatges, tematica, estilDesc, history, userConfig) {
   const ctx = comprimirContext(tematica, estilDesc, worldbuilding, elencPersonatges);
 
+  var perfil = getPerfilAutor(tematica);
+  var instruccionsEstructurals = '';
+  if (perfil) {
+    var e = perfil.estructura;
+    instruccionsEstructurals =
+      '\n\n=== INSTRUCCIONS ESTRUCTURALS DE L\'AUTOR (' + perfil.nom + ') ===\n' +
+      'Tipus d\'estructura: ' + e.descripcio + '\n\n' +
+      'DISTRIBUCIÓ D\'ACTES:\n' +
+      '- Acte 1 (' + e.distribucioActes.acte1_percentatge + '% dels capítols): ' + e.distribucioActes.acte1_instruccio + '\n' +
+      '- Acte 2 (' + e.distribucioActes.acte2_percentatge + '% dels capítols): ' + e.distribucioActes.acte2_instruccio + '\n' +
+      '- Acte 3 (' + e.distribucioActes.acte3_percentatge + '% dels capítols): ' + e.distribucioActes.acte3_instruccio + '\n\n' +
+      'FILS NARRATIUS: ' + e.numFilsNarratius + '\n' + e.instruccioFils + '\n\n' +
+      'PUNT MIG (midpoint): ' + e.midpoint + '\n\n' +
+      'Número de capítols recomanat: ' + e.numCapitolsRecomanat;
+  }
+
   const msgs = [
     ...history,
     {
       role: 'user',
-      content: `Tenim definits el món i l'elenc de la novel·la. Aquí el resum:\n\n${ctx}\n\n---\nGenera 4 opcions d'estructura narrativa per a la novel·la. Cada opció ha de ser diferent en forma i filosofia (per exemple: estructura de 3 actes clàssica, estructura de 4 actes, estructura circular, estructura de trames paral·leles).\n\nPer a cada opció inclou:\n- Nom de l'estructura\n- Resum de cada acte en 2 línies: quins esdeveniments, quin personatge lidera, quin canvi es produeix\n- 2-3 punts de gir principals que articulen la tensió\n- 1 línia sobre com encaixa amb els personatges i el món definits\n\nMarca amb (Recomanat) l'opció que millor aprofiti les tensions dels personatges i el potencial del món.\n\nFormat ESTRICTE (4 opcions numerades, res més, sense cap introducció):\n1. **[Nom de l'estructura]**\nActe I: [2 línies]\nActe II: [2 línies]\nActe III: [2 línies]\nPunts de gir: [2-3 punts separats per " / "]\nEncaix: [1 línia]\n\n2. **[Nom de l'estructura]**\n...\n\n3. ...\n\n4. ... (Recomanat)`
+      content: 'Tenim definits el món i l\'elenc de la novel·la. Aquí el resum:\n\n' + ctx + instruccionsEstructurals + '\n\n---\nGenera 4 opcions d\'estructura narrativa per a la novel·la. Cada opció ha de ser diferent en forma i filosofia' + (perfil ? ' (una d\'elles ha de seguir el patró de ' + perfil.nom + ')' : ' (per exemple: estructura de 3 actes clàssica, estructura de 4 actes, estructura circular, estructura de trames paral·leles)') + '.\n\nPer a cada opció inclou:\n- Nom de l\'estructura\n- Resum de cada acte en 2 línies: quins esdeveniments, quin personatge lidera, quin canvi es produeix\n- 2-3 punts de gir principals que articulen la tensió\n- 1 línia sobre com encaixa amb els personatges i el món definits\n\nMarca amb (Recomanat) l\'opció que millor aprofiti les tensions dels personatges i el potencial del món.\n\nFormat ESTRICTE (4 opcions numerades, res més, sense cap introducció):\n1. **[Nom de l\'estructura]**\nActe I: [2 línies]\nActe II: [2 línies]\nActe III: [2 línies]\nPunts de gir: [2-3 punts separats per " / "]\nEncaix: [1 línia]\n\n2. **[Nom de l\'estructura]**\n...\n\n3. ...\n\n4. ... (Recomanat)'
     }
   ];
-  const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens: 3000 }));
+  const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens: 3500 }));
   const newHistory = [...msgs, { role: 'assistant', content: response }];
   return { response, history: newHistory };
 }
@@ -605,11 +910,27 @@ function fase9_estructura(conteActual, worldbuilding, elencPersonatges, tematica
 // ─── FASE 10: Outline de capítols ───────────────────────────
 // contextComprimit: string ja comprimida pel frontend (sense cost extra)
 function fase10_outline(contextComprimit, estructuraTriada, history, userConfig, tematica) {
+  var perfil = getPerfilAutor(tematica);
+  var instruccionsOutline = '';
+  var numCapFormat = 'entre 12 i 25';
+  var filFormat = '';
+  if (perfil) {
+    var e = perfil.estructura;
+    numCapFormat = e.numCapitolsRecomanat;
+    instruccionsOutline =
+      '\n\n=== INSTRUCCIONS D\'OUTLINE PER A ' + perfil.nom.toUpperCase() + ' ===\n' +
+      e.instruccioFils + '\n' +
+      'PUNT MIG OBLIGATORI (cap. ' + Math.round(parseInt(numCapFormat.split('-')[0] || 12) / 2 + parseInt(numCapFormat.split('-')[1] || 20) / 2) / 2 + '): ' + e.midpoint;
+    if (e.numFilsNarratius > 1) {
+      filFormat = ' | Fil: [A/B' + (e.numFilsNarratius > 2 ? '/C' : '') + ']';
+    }
+  }
+
   const msgs = [
     ...history,
     {
       role: 'user',
-      content: `Tenim definits el món, els personatges i l'estructura de la novel·la:\n\n${contextComprimit}\n\nESTRUCTURA TRIADA:\n${estructuraTriada}\n\n---\nGenera l'outline complet de capítols de la novel·la. El nombre de capítols ha d'estar entre 12 i 25, ajustat a la complexitat de l'estructura triada.\n\nCada capítol en una sola línia, format ESTRICTE:\nCap. N — [Títol breu] | POV: [Nom] | [Objectiu narratiu en 10 paraules màxim] | Descobriment: [Què sap el lector de nou al final del capítol]\n\nEl conjunt ha de:\n- Cobrir tots els actes de l'estructura triada de manera proporcional\n- Distribuir els POVs estratègicament entre els personatges de l'elenc\n- Mantenir tensió creixent amb punts de gir als capítols clau\n- Cada capítol ha de tenir un objectiu narratiu clar i diferent dels altres\n\nFormat ESTRICTE (res més, sense introducció ni resum final):\nCap. 1 — [Títol] | POV: [Nom] | [Objectiu 10 paraules] | Descobriment: [text breu]\nCap. 2 — [Títol] | POV: [Nom] | [Objectiu 10 paraules] | Descobriment: [text breu]\n...`
+      content: 'Tenim definits el món, els personatges i l\'estructura de la novel·la:\n\n' + contextComprimit + '\n\nESTRUCTURA TRIADA:\n' + estructuraTriada + instruccionsOutline + '\n\n---\nGenera l\'outline complet de capítols de la novel·la. El nombre de capítols ha de ser ' + numCapFormat + ', ajustat a la complexitat de l\'estructura triada.\n\nCada capítol en una sola línia, format ESTRICTE:\nCap. N — [Títol breu] | POV: [Nom]' + filFormat + ' | [Objectiu narratiu en 10 paraules màxim] | Descobriment: [Què sap el lector de nou al final del capítol]\n\nEl conjunt ha de:\n- Cobrir tots els actes de l\'estructura triada de manera proporcional\n- Distribuir els POVs estratègicament entre els personatges de l\'elenc\n- Mantenir tensió creixent amb punts de gir als capítols clau\n- Cada capítol ha de tenir un objectiu narratiu clar i diferent dels altres\n\nFormat ESTRICTE (res més, sense introducció ni resum final):\nCap. 1 — [Títol] | POV: [Nom]' + filFormat + ' | [Objectiu 10 paraules] | Descobriment: [text breu]\nCap. 2 — [Títol] | POV: [Nom]' + filFormat + ' | [Objectiu 10 paraules] | Descobriment: [text breu]\n...'
     }
   ];
   const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens: 4096 }));
@@ -748,6 +1069,19 @@ function fase13_compilarBiblia(dades) {
     if (unics.length > 0) seccions.push('## VOCABULARI\n' + unics.join(', '));
   }
 
+  // VEU NARRATIVA I REGISTRE (des del perfil d'autor)
+  var perfil = getPerfilAutor(d.tematica);
+  if (perfil) {
+    seccions.push(
+      '## VEU NARRATIVA\n' +
+      perfil.protagonista.veuNarrativa + '\n\n' +
+      '## REGISTRE I RITME\n' +
+      'Registre: ' + perfil.estil.registre + '\n' +
+      'Ritme: ' + perfil.estil.ritme + '\n' +
+      'Diàleg: ' + perfil.estil.dialeg
+    );
+  }
+
   return seccions.join('\n\n');
 }
 
@@ -820,7 +1154,7 @@ function analitzarAmbEditor(userPrompt, userConfig) {
 // capitolsData: array de {num, outlineText, text} per als capítols generats.
 // biblia:       string (bíblia de consistència compilada).
 // userConfig:   configuració del LLM de l'usuari.
-function fase15_revisioCoherencia(capitolsData, biblia, userConfig, fetsCanonicsText, outlineFuturText) {
+function fase15_revisioCoherencia(capitolsData, biblia, userConfig, fetsCanonicsText, outlineFuturText, tematica) {
   var d = capitolsData || [];
 
   // Comprimir cada capítol: primeres i últimes 200 paraules + outline
@@ -849,7 +1183,16 @@ function fase15_revisioCoherencia(capitolsData, biblia, userConfig, fetsCanonics
     '3. Fils narratius o detalls plantats que han quedat abandonats\n' +
     '4. Inconsistències de personatges (comportament, coneixements, relacions)\n' +
     '5. Patrons estilístics repetitius: metàfores, comparacions, imatges sensorials o estructures de frase que apareixen en múltiples capítols de forma idèntica o quasi idèntica. Inclou repeticions de clàusules de tancament de capítol.\n' +
-    '6. Diàlegs indiferenciats: personatges que parlen amb la mateixa veu, ritme i registre quan haurien de ser distingibles.\n\n' +
+    '6. Diàlegs indiferenciats: personatges que parlen amb la mateixa veu, ritme i registre quan haurien de ser distingibles.\n' +
+    (function() {
+      var perfil = getPerfilAutor(tematica);
+      if (!perfil) return '';
+      return '7. COHERÈNCIA AMB L\'ESTIL DE ' + perfil.nom.toUpperCase() + ':\n' +
+        '   - Veu narrativa: ' + perfil.protagonista.veuNarrativa.substring(0, 200) + '\n' +
+        '   - Diàlegs: ' + perfil.estil.dialeg.substring(0, 200) + '\n' +
+        '   - Antipatrons a verificar: ' + perfil.antipatrons.slice(0, 3).join(' | ') + '\n';
+    })() +
+    '\n' +
     'Per cada problema, proposa una correcció específica al capítol corresponent.\n\n' +
     'Format ESTRICTE per a cada problema (sense cap variació):\n' +
     'PROBLEMA: [descripció clara i breu]\n' +
@@ -991,26 +1334,55 @@ function escriureCapitol(partNum, numCapitol, totalCapitols, biblia, outlineCapi
   var systemForCap = getSystemPrompt(tematica) +
     '\n\n=== BÍBLIA DE LA NOVEL·LA ===\n' + (biblia || '');
 
-  if (capitolsRestants > 3) {
-    systemForCap += '\n\n[ALERTA DE RITME: Estàs a la fase de desenvolupament. ESTÀ PROHIBIT resoldre el conflicte principal, revelar els grans secrets o matar l\'antagonista en aquest capítol. Mantingues la tensió.]';
+  var perfil = getPerfilAutor(tematica);
+
+  // Alerta de ritme genèrica (fase de desenvolupament)
+  if (capitolsRestants > 3 && numCapitol > 2) {
+    systemForCap += '\n\n[ALERTA DE RITME: Estàs a la fase de desenvolupament. Mantén la tensió però no precipitis la resolució.]';
   }
 
-  // MILLORA 3: Control de tensió macro per posició al timeline
+  // Punt mig adaptat al perfil
   var midPoint = Math.ceil(totalCapitols / 2);
   if (numCapitol === midPoint) {
-    systemForCap += '\n\n[PUNT MIG DE LA NOVEL·LA — CAPÍTOL ' + numCapitol + ' DE ' + totalCapitols + ']: Aquest capítol ha de contenir LA REVELACIÓ o el GIR que canvia la direcció de tota la trama. El protagonista descobreix que el problema és molt més gran, diferent o més personal del que creia. Res no pot ser igual després d\'aquest capítol. Ha de ser el moment de major densitat informativa i emocional fins ara.';
+    if (perfil) {
+      systemForCap += '\n\n[PUNT MIG — CAPÍTOL ' + numCapitol + ' DE ' + totalCapitols + ']: ' + perfil.estructura.midpoint;
+    } else {
+      systemForCap += '\n\n[PUNT MIG]: Gir central de la trama. El protagonista descobreix que tot és molt més gran del que creia. Res no pot ser igual després d\'aquest capítol.';
+    }
   }
 
+  // Pre-clímax adaptat al perfil
   if (capitolsRestants >= 2 && capitolsRestants <= 3) {
-    systemForCap += '\n\n[ACCELERACIÓ PRE-CLÍMAX]: Ritme urgent. Frases més curtes que la mitjana. Decisions irreversibles. Els personatges creuen ponts que no poden tornar a creuar. El temps s\'esgota narrativament. Elimina qualsevol descripció que no sigui estrictament funcional.';
+    if (perfil && perfil.estructura.tipusOutline === 'cicles_iniciatics') {
+      systemForCap += '\n\n[ACCELERACIÓ]: Les experiències s\'intensifiquen. El narrador ja no pot mantenir la distància racional. Cada cicle és més profund i desorientador que l\'anterior. El Mestre augmenta la pressió.';
+    } else if (perfil && perfil.estructura.tipusOutline === 'degradacio_progressiva') {
+      systemForCap += '\n\n[FRAGMENTACIÓ ACCELERADA]: La realitat es degrada ràpidament. Múltiples certeses cauen simultàniament. El protagonista ha d\'actuar sense saber què és real. Ritme fragmentat: paràgrafs curts, percepcions contradictòries.';
+    } else {
+      systemForCap += '\n\n[ACCELERACIÓ PRE-CLÍMAX]: Ritme urgent. Frases més curtes que la mitjana. Decisions irreversibles. Els personatges creuen ponts que no poden tornar a creuar.';
+    }
   }
 
+  // Clímax (penúltim capítol) adaptat al perfil
   if (capitolsRestants === 1) {
-    systemForCap += '\n\n[CLÍMAX]: Aquest és el capítol de màxima tensió. Totes les subtrames convergeixen. El conflicte central arriba al punt de no retorn. Acció concentrada, emoció sense filtres, conseqüències reals i irreversibles.';
+    if (perfil && perfil.estructura.tipusOutline === 'cicles_iniciatics') {
+      systemForCap += '\n\n[EXPERIÈNCIA CULMINANT]: L\'experiència definitiva que el narrador no pot racionalitzar. Detall sensorial màxim. Estats de consciència descrits amb precisió clínica. La ment racional cedeix.';
+    } else if (perfil && perfil.estructura.tipusOutline === 'degradacio_progressiva') {
+      systemForCap += '\n\n[COL·LAPSE ONTOLÒGIC]: Totes les interpretacions cauen. El protagonista actua per instint moral, no per coneixement. La realitat és un camp de mines epistemològic.';
+    } else {
+      systemForCap += '\n\n[CLÍMAX]: Màxima tensió. Totes les subtrames convergeixen. Conflicte central al punt de no retorn.';
+    }
   }
 
+  // Resolució final (últim capítol) adaptada al perfil
   if (capitolsRestants === 0) {
-    systemForCap += '\n\n[RESOLUCIÓ FINAL]: Últim capítol de la novel·la. Resol els fils oberts amb precisió. L\'última frase ha de ressonar com l\'última nota d\'una simfonia: inevitable, definitiva, memorable. No introdueixis cap element nou. Tanca cercles oberts al principi.';
+    if (perfil) {
+      systemForCap += '\n\n[RESOLUCIÓ FINAL — ESTIL ' + perfil.nom.toUpperCase() + ']: ' +
+        perfil.clausura.instruccio + '\n' +
+        'ÚLTIMA FRASE: ' + perfil.clausura.ultimaFrase + '\n' +
+        perfil.clausura.prohibicions;
+    } else {
+      systemForCap += '\n\n[RESOLUCIÓ FINAL]: Últim capítol de la novel·la. Resol els fils oberts amb precisió. L\'última frase ha de ressonar: inevitable, definitiva, memorable.';
+    }
   }
 
   if (fetsCanonicsText && String(fetsCanonicsText).trim()) {
@@ -1033,7 +1405,8 @@ function escriureCapitol(partNum, numCapitol, totalCapitols, biblia, outlineCapi
     contextAnterior += '\n\n=== ESTAT JSON VIGENT (context pur) ===\n' + String(estatJson).trim();
   }
 
-  var isNoir    = tematica && /noir|negr[ae]|nòrdi/i.test(tematica);
+  // noirExtra: fallback per a temàtiques antigues no mapeades a perfil
+  var isNoir    = !perfil && tematica && /noir|negr[ae]|nòrdi/i.test(tematica);
   var noirExtra = isNoir
     ? '\n→ Aplica l\'estil Nordic Noir: prosa crua, procediments detallats, crítica social integrada, entorn nòrdic opressiu.'
     : '';

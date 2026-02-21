@@ -992,20 +992,14 @@
 
 <!-- FASE 0: Selecció de gènere -->
 <div class="card hidden" id="fase-0">
-  <h2><span class="icon">🎭</span> Tria el gènere</h2>
-  <label class="field-label" for="sel-tematica">Tipus de conte</label>
+  <h2><span class="icon">🎭</span> Tria el perfil d'autor</h2>
+  <label class="field-label" for="sel-tematica">Perfil d'autor</label>
   <select id="sel-tematica">
-    <option value="">— Selecciona un gènere —</option>
-    <option value="conte de terror psicològic">Terror psicològic</option>
-    <option value="conte de realisme màgic">Realisme màgic</option>
-    <option value="conte negre nòrdic (Nordic Noir)">Conte negre (Nordic Noir)</option>
-    <option value="conte de ciència-ficció breu">Ciència ficció</option>
-    <option value="conte fantàstic">Conte fantàstic</option>
-    <option value="faula contemporània">Faula contemporània</option>
-    <option value="conte sentimental">Conte sentimental</option>
-    <option value="conte d'humor negre">Humor negre</option>
-    <option value="microconte / flash fiction">Microconte / flash fiction</option>
-    <option value="conte de misteri">Misteri</option>
+    <option value="">— Selecciona un perfil —</option>
+    <option value="larsson">Stieg Larsson — Millennium (Nordic Noir)</option>
+    <option value="tolkien">J.R.R. Tolkien — Alta Fantasia Èpica</option>
+    <option value="dick">Philip K. Dick — Ciència-ficció ontològica</option>
+    <option value="castaneda">Carlos Castaneda — Itinerari iniciàtic</option>
   </select>
   <div class="btn-row">
     <button class="btn btn-primary" onclick="iniciarFase1()">✨ Generar premisses</button>
@@ -3362,7 +3356,7 @@ function iniciarRevisio() {
       document.getElementById('revisio-loader').classList.remove('visible');
       toast('Error a la revisió: ' + err.message);
     })
-    .fase15_revisioCoherencia(capGeneratsFinestra, ESTAT.biblia, USER_CONFIG, construirContextFetsCanonics(12), outlineFutur);
+    .fase15_revisioCoherencia(capGeneratsFinestra, ESTAT.biblia, USER_CONFIG, construirContextFetsCanonics(12), outlineFutur, ESTAT.tematica);
 }
 
 // ─── Renderitzar l'informe de revisió ───────────────────────
