@@ -483,14 +483,68 @@ function getSystemPrompt(tematica) {
   return SYSTEM_DEFAULT;
 }
 
+// ─── Context d'ambientació catalana ──────────────────────────
+// Retorna el bloc de text que s'injecta als prompts quan l'ambientació
+// és 'catalana' o 'catalana_medieval'. Retorna '' per a 'universal'.
+function construirContextAmbientacio(ambientacio, tematica) {
+  if (!ambientacio || ambientacio === 'universal') return '';
+
+  if (ambientacio === 'catalana') {
+    return '\n\n=== AMBIENTACIÓ CATALANA OBLIGATÒRIA ===\n' +
+      'Totes les premisses, personatges, localitzacions i trames han d\'estar situades explícitament als Països Catalans.\n' +
+      'TOPÒNIMS: Usa noms reals de ciutats, pobles, comarques, barris, muntanyes, rius, cales, masies. ' +
+      'Exemples: Barcelona (Raval, Gràcia, Poblenou), Girona, Vic, Manresa, Tarragona, Lleida, Perpinyà, Palma, ' +
+      'València, Alacant, Tortosa, la Seu d\'Urgell, Montserrat, els Pirineus, el Delta de l\'Ebre, la Costa Brava, ' +
+      'el Montseny, les Terres de l\'Ebre, l\'Empordà, el Priorat, la Garrotxa.\n' +
+      'CULTURA: Integra referents culturals catalans amb naturalitat: castells/castellers, festes majors, ' +
+      'correfocs, sardanes, calçotades, pa amb tomàquet, verema, tramuntana, mestral, xarxa ferroviària Rodalies, ' +
+      'mossos d\'esquadra, institucions catalanes. Mai com a catàleg turístic — com a part orgànica de la vida dels personatges.\n' +
+      'PAISATGE: El paisatge català és un personatge: la llum del Mediterrani, la boira del Pla de l\'Estany, ' +
+      'la tramuntana de l\'Empordà, els camps de vinyes del Penedès, la humitat del Delta, la neu del Pirineu, ' +
+      'la pedra seca de les Garrigues, els penya-segats de la Costa Brava.\n' +
+      'NOMS: Usa noms catalans: Arnau, Núria, Oriol, Montse, Laia, Jordi, Mercè, Pau, Carla, Biel, Martí, Blanca, Pere, Marta.\n' +
+      'LLENGUA: Integra expressions i girs catalans naturals (no forçats): "vés a saber", "au va", "prou", "apa", "escolta", "sisplau".';
+  }
+
+  if (ambientacio === 'catalana_medieval') {
+    return '\n\n=== AMBIENTACIÓ MEDIEVAL CATALANA OBLIGATÒRIA ===\n' +
+      'Totes les premisses, personatges i trames han d\'estar situades a la Corona d\'Aragó medieval (segles X-XV).\n' +
+      'TOPÒNIMS I GEOGRAFIA: Usa noms històrics reals: Barcelona, Girona, Perpinyà, Lleida, Tortosa, ' +
+      'València, Mallorca, Montpeller, Saragossa, Nàpols, Sicília, Atenes, Constantinoble (per a expansió mediterrània). ' +
+      'Monestirs: Poblet, Santes Creus, Ripoll, Montserrat. Castells: Miravet, Cardona, Besalú, Peníscola.\n' +
+      'CONTEXT HISTÒRIC: Corona d\'Aragó com a potència mediterrània. Integra amb naturalitat: ' +
+      'el Consell de Cent, les Corts catalanes, els consolats de mar, els gremis, els almogàvers, ' +
+      'la conquesta de Mallorca/València/Sicília, les disputes amb Castella i França, ' +
+      'les jueries i calls jueus, la Inquisició, el comerç tèxtil i d\'espècies, ' +
+      'Ramon Llull i la filosofia, Joanot Martorell i la literatura cavalleresca, ' +
+      'Ausiàs March i la poesia, les drassanes i la construcció naval.\n' +
+      'CLASSES SOCIALS: Noblesa feudal (comtes, vescomtes, barons), orde del Temple, mercaders del Consolat de Mar, ' +
+      'artesans dels gremis, pagesos de remença, jueus dels calls, clergat regular i secular, almogàvers.\n' +
+      'NOMS: Usa noms medievals catalans: Arnau, Bernat, Guillem, Ramon, Pere, Jaume, Berenguer, Galceran, ' +
+      'Blanca, Sibil·la, Violant, Elisenda, Constança, Agnès, Almodis.\n' +
+      'REGISTRE: Català contemporani però amb color medieval: vocabulari feudal (feu, vassall, host, alou), ' +
+      'marítim (galera, nau, galeassa, rumb), religiós (vescomte, abat, prior, canonge). ' +
+      'NO escriguis en català arcaic — el registre ha de ser llegible per un lector actual, ' +
+      'però amb sabor d\'època.\n' +
+      'Si el gènere és FANTÀSTIC: pots afegir elements fantàstics (màgia, criatures, profecies) ' +
+      'PERÒ el marc ha de ser recognosciblement la Corona d\'Aragó. La màgia pot beure de Ramon Llull, ' +
+      'l\'alquímia, la càbala dels calls jueus, les tradicions àrabs heretades, la bruxeria pirinenca. ' +
+      'Les criatures poden ser del folklore català: dones d\'aigua, minairons, dips, bruixes del Canigó, ' +
+      'dracs, barretines encantades.';
+  }
+
+  return '';
+}
+
 // ─── FASE 1: 10 premisses per a contes ─────────────────────
-function fase1_premisses(tematica, history, userConfig) {
+function fase1_premisses(tematica, history, userConfig, ambientacio) {
   history = history || [];
+  var contextAmbientacio = construirContextAmbientacio(ambientacio, tematica);
   const userMsg = {
     role: 'user',
-    content: `Genera 10 premisses originals per a contes breus del gènere: **${tematica}**.
-
-Cada premissa ha de:
+    content: 'Genera 10 premisses originals per a contes breus del gènere: **' + tematica + '**.' +
+      contextAmbientacio + '\n\n' +
+      `Cada premissa ha de:
 - Ser una sola frase que contingui una situació anòmala o conflicte inicial potent
 - Tenir un ganxo implícit que faci preguntar "i llavors?"
 - Suggerir potencial de twist o revelació inesperada al final
@@ -517,8 +571,9 @@ Format ESTRICTE (res més, sense cap introducció):
 }
 
 // ─── FASE 3: 5 protagonistes rics ──────────────────────────
-function fase3_personatges(premissaTriada, estilDesc, history, userConfig, tematica) {
+function fase3_personatges(premissaTriada, estilDesc, history, userConfig, tematica, ambientacio) {
   const isNoir = tematica && /noir|negr[ae]|nòrdi/i.test(tematica);
+  var contextAmbientacio = construirContextAmbientacio(ambientacio, tematica);
 
   const protagonistePrompt = isNoir
     ? `Genera 5 protagonistes possibles per a aquest conte NEGRE NÒRDIC. Han de ser arquetips propis del gènere.
@@ -540,7 +595,7 @@ Cada protagonista ha de tenir veu pròpia i la ferida personal que el fa avança
     },
     {
       role: 'user',
-      content: `${protagonistePrompt}
+      content: protagonistePrompt + contextAmbientacio + `
 
 Afegeix (Recomanat) al final del protagonista que millor encaixi amb la premissa i l'estil triat.
 
@@ -558,14 +613,16 @@ Format ESTRICTE (5 opcions, res més):
 }
 
 // ─── FASE 4: 5 localitzacions ───────────────────────────────
-function fase_localitzacions(protagonistaTriat, estilDesc, history, userConfig, tematica) {
+function fase_localitzacions(protagonistaTriat, estilDesc, history, userConfig, tematica, ambientacio) {
+  var contextAmbientacio = construirContextAmbientacio(ambientacio, tematica);
   const msgs = [
     ...history,
     { role: 'user',      content: `He triat el protagonista: "${protagonistaTriat}".` },
     { role: 'assistant', content: "Perfecte. Proposo localitzacions que maximitzin el potencial narratiu de la premissa i el protagonista." },
     {
       role: 'user',
-      content: `Genera 5 localitzacions possibles per a aquest conte, coherents amb el gènere, l'estil i el protagonista triat.
+      content: 'Genera 5 localitzacions possibles per a aquest conte, coherents amb el gènere, l\'estil i el protagonista triat.' +
+        contextAmbientacio + `
 
 Cada localització ha de:
 - Tenir una atmosfera concreta que reforci el to del conte
@@ -588,14 +645,16 @@ Format ESTRICTE (5 opcions, res més):
 }
 
 // ─── FASE 5: 5 finals possibles ─────────────────────────────
-function fase4_finals(localitzacioTriada, estilDesc, history, userConfig, tematica) {
+function fase4_finals(localitzacioTriada, estilDesc, history, userConfig, tematica, ambientacio) {
+  var contextAmbientacio = construirContextAmbientacio(ambientacio, tematica);
   const msgs = [
     ...history,
     { role: 'user',      content: `He triat la localització: "${localitzacioTriada}".` },
     { role: 'assistant', content: 'Perfecte. Amb totes les decisions preses, proposo possibles finals per al conte.' },
     {
       role: 'user',
-      content: `Genera 5 finals possibles per a aquest conte, coherents amb la premissa, l'estil i el protagonista triats.
+      content: 'Genera 5 finals possibles per a aquest conte, coherents amb la premissa, l\'estil i el protagonista triats.' +
+        contextAmbientacio + `
 
 Cada final ha de:
 - Ser diferent en to i resolució dels altres
@@ -629,9 +688,10 @@ Format ESTRICTE (5 opcions, res més):
 // finalTriat:    el final escollit (s'inclou a l'última part)
 // estilDesc:     descripció de l'estil narratiu
 // tematica:      gènere triat (per activar estil Nordic Noir si escau)
-function escriureContePart(partNum, totalParts, paraulesPerPart, finalTriat, estilDesc, history, userConfig, tematica) {
+function escriureContePart(partNum, totalParts, paraulesPerPart, finalTriat, estilDesc, history, userConfig, tematica, ambientacio) {
   const pp     = parseInt(paraulesPerPart) || 750;
   const isNoir = tematica && /noir|negr[ae]|nòrdi/i.test(tematica);
+  var contextAmbientacio = construirContextAmbientacio(ambientacio, tematica);
 
   // Instruccions addicionals per al Nordic Noir
   const noirExtra = isNoir
@@ -654,7 +714,7 @@ Final obligatori: "${finalTriat}"
 OBERTURA: primera frase magnètica, tensió immediata. Primers 3 paràgrafs sense exposició directa.
 ESTRUCTURA: unitat d'efecte, tensió creixent, punt d'inflexió a les 2/3 parts.
 ESTIL: mostra no expliquis, detalls sensorials concrets, ritme variat, veu única, diàlegs que revelen caràcter.
-FINAL: l'última frase ressona i tanca un cercle del principi.${noirExtra}
+FINAL: l'última frase ressona i tanca un cercle del principi.${noirExtra}` + contextAmbientacio + `
 Escriu directament el conte en català, sense títol ni nota de l'autor. Cap paraula en anglès ni cap altra llengua.`;
 
   } else if (partNum === 1) {
@@ -865,12 +925,14 @@ function fase6b_esqueletNovela(conteActual, tematica, estilDesc, userConfig) {
 }
 
 // ─── FASE 7: Worldbuilding — Extracció d'elements de món ───
-function fase7_worldbuilding(conteActual, tematica, estilDesc, history, userConfig) {
+function fase7_worldbuilding(conteActual, tematica, estilDesc, history, userConfig, ambientacio) {
+  var contextAmbientacio = construirContextAmbientacio(ambientacio, tematica);
   const msgs = [
     ...history,
     {
       role: 'user',
-      content: `Has escrit el conte següent:\n\n${conteActual}\n\n---\nAra, com a arquitecte de mons, analitza el conte i proposa 8 elements del món que es podrien expandir per convertir-lo en una novel·la. Els elements han de ser:\n\n1. Geografia — el territori i els seus llocs rellevants\n2. Política — el sistema de poder i les seves tensions\n3. Màgia/Tecnologia — el sistema màgic o tecnològic que regeix el món\n4. Religions — les creences, rituals i institucions religioses\n5. Faccions — els grups, bandes o organitzacions en conflicte\n6. Història pregressa — els esdeveniments passats que expliquen el present\n7. Economia — els recursos, el comerç i les desigualtats\n8. Cultura quotidiana — els costums, l'art, la gastronomia, les festes\n\nMarca amb "(Recomanat)" els 4 elements més rellevants per expandir basant-te en el que ja apareix al conte. Cada element: nom + descripció d'1 línia del que caldria definir.\n\nFormat ESTRICTE (res més, sense cap introducció):\n1. **Geografia** — [descripció d'1 línia] (Recomanat)\n2. **Política** — [descripció d'1 línia]\n3. **Màgia/Tecnologia** — [descripció d'1 línia] (Recomanat)\n4. **Religions** — [descripció d'1 línia]\n5. **Faccions** — [descripció d'1 línia] (Recomanat)\n6. **Història pregressa** — [descripció d'1 línia]\n7. **Economia** — [descripció d'1 línia] (Recomanat)\n8. **Cultura quotidiana** — [descripció d'1 línia]`
+      content: 'Has escrit el conte següent:\n\n' + conteActual + '\n\n---\nAra, com a arquitecte de mons, analitza el conte i proposa 8 elements del món que es podrien expandir per convertir-lo en una novel·la.' +
+        contextAmbientacio + ` Els elements han de ser:\n\n1. Geografia — el territori i els seus llocs rellevants\n2. Política — el sistema de poder i les seves tensions\n3. Màgia/Tecnologia — el sistema màgic o tecnològic que regeix el món\n4. Religions — les creences, rituals i institucions religioses\n5. Faccions — els grups, bandes o organitzacions en conflicte\n6. Història pregressa — els esdeveniments passats que expliquen el present\n7. Economia — els recursos, el comerç i les desigualtats\n8. Cultura quotidiana — els costums, l'art, la gastronomia, les festes\n\nMarca amb "(Recomanat)" els 4 elements més rellevants per expandir basant-te en el que ja apareix al conte. Cada element: nom + descripció d'1 línia del que caldria definir.\n\nFormat ESTRICTE (res més, sense cap introducció):\n1. **Geografia** — [descripció d'1 línia] (Recomanat)\n2. **Política** — [descripció d'1 línia]\n3. **Màgia/Tecnologia** — [descripció d'1 línia] (Recomanat)\n4. **Religions** — [descripció d'1 línia]\n5. **Faccions** — [descripció d'1 línia] (Recomanat)\n6. **Història pregressa** — [descripció d'1 línia]\n7. **Economia** — [descripció d'1 línia] (Recomanat)\n8. **Cultura quotidiana** — [descripció d'1 línia]`
     }
   ];
   const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens: 2048 }));
@@ -879,13 +941,14 @@ function fase7_worldbuilding(conteActual, tematica, estilDesc, history, userConf
 }
 
 // ─── FASE 7: Worldbuilding — Expansió dels elements triats ──
-function fase7_expandirElements(elementsTriats, conteActual, tematica, history, userConfig) {
+function fase7_expandirElements(elementsTriats, conteActual, tematica, history, userConfig, ambientacio) {
   const llistaElements = elementsTriats.join('\n');
+  var contextAmbientacio = construirContextAmbientacio(ambientacio, tematica);
   const msgs = [
     ...history,
     {
       role: 'user',
-      content: `A partir del conte i dels elements de món proposats, desenvolupa una bíblia de món per als elements seleccionats.\n\nElements a expandir:\n${llistaElements}\n\nPer a cada element, escriu una descripció de 3-5 línies que:\n- Defineixi l'element amb precisió i profunditat\n- Connecti amb el que ja apareix al conte\n- Suggereixi tensions narratives implícites\n- Sigui útil per a un escriptor que vol expandir el món\n\nFormat ESTRICTE per a cada element:\n**[Nom de l'element]**\n[descripció de 3-5 línies]\n\nSepara els elements amb una línia en blanc. Escriu exclusivament en català.`
+      content: 'A partir del conte i dels elements de món proposats, desenvolupa una bíblia de món per als elements seleccionats.\n\nElements a expandir:\n' + llistaElements + contextAmbientacio + '\n\nPer a cada element, escriu una descripció de 3-5 línies que:\n- Defineixi l\'element amb precisió i profunditat\n- Connecti amb el que ja apareix al conte\n- Suggereixi tensions narratives implícites\n- Sigui útil per a un escriptor que vol expandir el món\n\nFormat ESTRICTE per a cada element:\n**[Nom de l\'element]**\n[descripció de 3-5 línies]\n\nSepara els elements amb una línia en blanc. Escriu exclusivament en català.'
     }
   ];
   const maxTokens  = Math.min(400 * elementsTriats.length + 800, 4096);
@@ -895,7 +958,7 @@ function fase7_expandirElements(elementsTriats, conteActual, tematica, history, 
 }
 
 // ─── FASE 8: Elenc de personatges per a la novel·la ─────────
-function fase8_elenc(conteActual, worldbuilding, tematica, estilDesc, history, userConfig, esqueletNovela) {
+function fase8_elenc(conteActual, worldbuilding, tematica, estilDesc, history, userConfig, esqueletNovela, ambientacio) {
   const contextMon = worldbuilding
     ? '\n\nBíblia de món disponible:\n' + worldbuilding
     : '';
@@ -903,6 +966,7 @@ function fase8_elenc(conteActual, worldbuilding, tematica, estilDesc, history, u
   const contextEsquelet = esqueletNovela
     ? '\n\nESQUELET D\'EXPANSIÓ (fils, girs i llavors de personatges):\n' + esqueletNovela.substring(0, 2000)
     : '';
+  var contextAmbientacio = construirContextAmbientacio(ambientacio, tematica);
 
   var perfil = getPerfilAutor(tematica);
   var instruccionsElenc = '';
@@ -946,7 +1010,7 @@ function fase8_elenc(conteActual, worldbuilding, tematica, estilDesc, history, u
     ...history,
     {
       role: 'user',
-      content: 'A partir del conte i del món creat, genera l\'elenc de 8 personatges per a la novel·la. Inclou els personatges que ja apareixen al conte (adaptats a la seva versió novel·lística) i afegeix-ne de nous necessaris per a una trama de major abast.' + contextMon + contextEsquelet + instruccionsElenc + instruccionsAntagonista + '\n\nCada personatge ha de tenir:\n- Una funció clara a la trama principal o a les subtrames\n- Un desig conscient i un temor ocult que generin tensió\n- Un arc de transformació creïble (on comença → on acaba)\n- Relacions concretes amb altres personatges de l\'elenc\n\nMarca amb (Recomanat) els 5 personatges més essencials per a la novel·la.\n\nFormat ESTRICTE (8 personatges, res més, sense cap introducció):\n1. **[Nom, edat]** | Rol: [funció a la trama] | Desig: [el que vol conscientment] | Temor: [el que l\'aterroritza o amaga] | Arc: [on comença → on acaba] | Veu: [tret narratiu o tic que el fa distintiu] | Relacions: [amb qui i com]\n2. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n3. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n4. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n5. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n6. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n7. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n8. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]'
+      content: 'A partir del conte i del món creat, genera l\'elenc de 8 personatges per a la novel·la. Inclou els personatges que ja apareixen al conte (adaptats a la seva versió novel·lística) i afegeix-ne de nous necessaris per a una trama de major abast.' + contextMon + contextEsquelet + contextAmbientacio + instruccionsElenc + instruccionsAntagonista + '\n\nCada personatge ha de tenir:\n- Una funció clara a la trama principal o a les subtrames\n- Un desig conscient i un temor ocult que generin tensió\n- Un arc de transformació creïble (on comença → on acaba)\n- Relacions concretes amb altres personatges de l\'elenc\n\nMarca amb (Recomanat) els 5 personatges més essencials per a la novel·la.\n\nFormat ESTRICTE (8 personatges, res més, sense cap introducció):\n1. **[Nom, edat]** | Rol: [funció a la trama] | Desig: [el que vol conscientment] | Temor: [el que l\'aterroritza o amaga] | Arc: [on comença → on acaba] | Veu: [tret narratiu o tic que el fa distintiu] | Relacions: [amb qui i com]\n2. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n3. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n4. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n5. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n6. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n7. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]\n8. **[Nom, edat]** | Rol: [...] | Desig: [...] | Temor: [...] | Arc: [...] | Veu: [...] | Relacions: [...]'
     }
   ];
   const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens: 4096 }));
@@ -1011,8 +1075,9 @@ function comprimirContext(tematica, estilDesc, worldbuilding, elencPersonatges, 
 }
 
 // ─── FASE 9: Estructura narrativa en actes ───────────────────
-function fase9_estructura(conteActual, worldbuilding, elencPersonatges, tematica, estilDesc, history, userConfig, esqueletNovela) {
+function fase9_estructura(conteActual, worldbuilding, elencPersonatges, tematica, estilDesc, history, userConfig, esqueletNovela, ambientacio) {
   const ctx = comprimirContext(tematica, estilDesc, worldbuilding, elencPersonatges, esqueletNovela);
+  var contextAmbientacio = construirContextAmbientacio(ambientacio, tematica);
 
   var perfil = getPerfilAutor(tematica);
   var instruccionsEstructurals = '';
@@ -1034,7 +1099,7 @@ function fase9_estructura(conteActual, worldbuilding, elencPersonatges, tematica
     ...history,
     {
       role: 'user',
-      content: 'Tenim definits el món i l\'elenc de la novel·la. Aquí el resum:\n\n' + ctx + instruccionsEstructurals + '\n\n---\nGenera 4 opcions d\'estructura narrativa per a la novel·la. Cada opció ha de ser diferent en forma i filosofia' + (perfil ? ' (una d\'elles ha de seguir el patró de ' + perfil.nom + ')' : ' (per exemple: estructura de 3 actes clàssica, estructura de 4 actes, estructura circular, estructura de trames paral·leles)') + '.\n\nPer a cada opció inclou:\n- Nom de l\'estructura\n- Resum de cada acte en 2 línies: quins esdeveniments, quin personatge lidera, quin canvi es produeix\n- 2-3 punts de gir principals que articulen la tensió\n- 1 línia sobre com encaixa amb els personatges i el món definits\n\nMarca amb (Recomanat) l\'opció que millor aprofiti les tensions dels personatges i el potencial del món.\n\nFormat ESTRICTE (4 opcions numerades, res més, sense cap introducció):\n1. **[Nom de l\'estructura]**\nActe I: [2 línies]\nActe II: [2 línies]\nActe III: [2 línies]\nPunts de gir: [2-3 punts separats per " / "]\nEncaix: [1 línia]\n\n2. **[Nom de l\'estructura]**\n...\n\n3. ...\n\n4. ... (Recomanat)'
+      content: 'Tenim definits el món i l\'elenc de la novel·la. Aquí el resum:\n\n' + ctx + instruccionsEstructurals + contextAmbientacio + '\n\n---\nGenera 4 opcions d\'estructura narrativa per a la novel·la. Cada opció ha de ser diferent en forma i filosofia' + (perfil ? ' (una d\'elles ha de seguir el patró de ' + perfil.nom + ')' : ' (per exemple: estructura de 3 actes clàssica, estructura de 4 actes, estructura circular, estructura de trames paral·leles)') + '.\n\nPer a cada opció inclou:\n- Nom de l\'estructura\n- Resum de cada acte en 2 línies: quins esdeveniments, quin personatge lidera, quin canvi es produeix\n- 2-3 punts de gir principals que articulen la tensió\n- 1 línia sobre com encaixa amb els personatges i el món definits\n\nMarca amb (Recomanat) l\'opció que millor aprofiti les tensions dels personatges i el potencial del món.\n\nFormat ESTRICTE (4 opcions numerades, res més, sense cap introducció):\n1. **[Nom de l\'estructura]**\nActe I: [2 línies]\nActe II: [2 línies]\nActe III: [2 línies]\nPunts de gir: [2-3 punts separats per " / "]\nEncaix: [1 línia]\n\n2. **[Nom de l\'estructura]**\n...\n\n3. ...\n\n4. ... (Recomanat)'
     }
   ];
   const response   = callLLM(msgs, getSystemPrompt(tematica), Object.assign({}, userConfig, { maxTokens: 3500 }));
@@ -1460,13 +1525,194 @@ function generarObertura(numCapitol, outlineCapitol, textCapAnterior, biblia, es
   return fallback ? fallback[1].trim() : '';
 }
 
+// ─── Auditar i reescriure el ganxo de final de capítol ───────
+// Analitza les últimes 200 paraules del capítol generat.
+// Si el ganxo és feble, reescriu NOMÉS les últimes 150-200 paraules.
+// No opera sobre l'últim capítol (té les seves pròpies regles de clausura).
+function auditarGanxo(textCapitol, numCapitol, totalCapitols, outlineCapitol, outlineSeguentCapitol, tematica, userConfig) {
+  if (!textCapitol || !textCapitol.trim()) return textCapitol;
+  if (numCapitol >= totalCapitols) return textCapitol;
+
+  var paraules = textCapitol.trim().split(/\s+/);
+  if (paraules.length < 100) return textCapitol;
+
+  var ultimes200      = paraules.slice(-200).join(' ');
+  var textSenseGanxo  = paraules.slice(0, -200).join(' ');
+
+  var tipusGanxos = [
+    'PREGUNTA OBERTA: El capítol acaba amb una pregunta implícita o explícita que el lector necessita veure respondre. No una pregunta retòrica — un dubte narratiu genuí: qui ha fet X? Què hi ha darrere de Y? Per què Z ha reaccionat així?',
+    'REVELACIÓ PARCIAL: El capítol acaba revelant informació nova que obre una pregunta encara més gran. El lector sap més que fa un minut, però el que sap el fa necessitar saber MÉS.',
+    'DECISIÓ IMMINENT: El capítol acaba just abans que el protagonista prengui una decisió crucial. El lector veu les opcions, entén el dilema, però no veu què tria. Ha de girar la pàgina.',
+    'TALL EN TENSIÓ MÀXIMA: El capítol es talla en el moment de màxima tensió d\'una escena — una porta que s\'obre, un so que no hauria de ser allà, un telèfon que sona, un descobriment a mig fer. Sense resolució.'
+  ];
+  var tipusIdx  = (numCapitol - 1) % tipusGanxos.length;
+  var tipusGanxo = tipusGanxos[tipusIdx];
+
+  var perfil = typeof getPerfilAutor === 'function' ? getPerfilAutor(tematica) : null;
+  var ganxoAutor = '';
+  if (perfil) {
+    var ganxosPerAutor = {
+      'larsson':   'Larsson: talla amb un detall burocràtic o documental que revela una connexió inquietant. O amb un missatge, trucada o document que canvia el que el personatge creia saber.',
+      'tolkien':   'Tolkien: talla amb un canvi de perspectiva cap a un altre grup en perill. O amb un pressentiment, un so llunyà, o un canvi en el paisatge que anuncia amenaça.',
+      'dick':      'Dick: talla amb una percepció que contradiu el que el lector acaba d\'acceptar com a real. Un detall que no encaixa. Una frase que sona "programada". Un objecte que ha canviat.',
+      'castaneda': 'Castaneda: talla amb una frase del Mestre que obre un abisme conceptual. O amb una percepció alterada que el narrador no pot processar. El capítol acaba en el vèrtex de la incomprensió.'
+    };
+    for (var clau in ganxosPerAutor) {
+      if (perfil.nom && perfil.nom.toLowerCase().indexOf(clau) >= 0) {
+        ganxoAutor = '\nESTIL ESPECÍFIC: ' + ganxosPerAutor[clau];
+        break;
+      }
+    }
+  }
+
+  var contextSeguent = outlineSeguentCapitol
+    ? '\nPROPER CAPÍTOL (context): ' + String(outlineSeguentCapitol).substring(0, 150)
+    : '';
+
+  var msgs = [{
+    role: 'user',
+    content:
+      '=== FINAL ACTUAL DEL CAPÍTOL ' + numCapitol + ' (últimes 200 paraules) ===\n' +
+      ultimes200 + '\n\n' +
+      'OUTLINE DEL CAPÍTOL: ' + String(outlineCapitol || '').substring(0, 150) + contextSeguent + '\n\n' +
+      '---\n' +
+      'AVALUACIÓ:\n' +
+      '1. Puntua de 1 a 10 la força del ganxo actual (10 = impossible deixar de llegir).\n' +
+      '2. Si la puntuació és >= 7, respon NOMÉS: "GANXO_OK"\n' +
+      '3. Si és < 7, reescriu les últimes 150-200 paraules del capítol aplicant EXACTAMENT aquest tipus de ganxo:\n\n' +
+      tipusGanxo + ganxoAutor + '\n\n' +
+      'Si reescrius, respon NOMÉS amb el text reescrit (150-200 paraules), sense cap comentari, puntuació ni explicació. Comença directament amb la narració reescrita.\n' +
+      'Escriu exclusivament en català.'
+  }];
+
+  var system = getSystemPrompt(tematica) +
+    '\nEts un editor especialitzat en ganxos narratius de final de capítol. La teva obsessió és que el lector NO pugui tancar el llibre.';
+
+  try {
+    var resposta = callLLM(msgs, system, Object.assign({}, userConfig, { maxTokens: 1200 }));
+    if (!resposta || /GANXO_OK/i.test(resposta.trim())) return textCapitol;
+    return textSenseGanxo + '\n\n' + resposta.trim();
+  } catch (e) {
+    return textCapitol;
+  }
+}
+
+// ─── Fase 15b: Simulació de lector beta ──────────────────────
+// Analitza l'experiència de lectura: ritme, engagement, redundàncies.
+// capitolsData: array de {num, text}. subtrames: array de strings.
+function fase15b_lectorBeta(capitolsData, subtrames, biblia, userConfig, tematica) {
+  var d = capitolsData || [];
+  if (d.length < 4) return { response: 'Massa pocs capítols per a una anàlisi de lector beta.' };
+
+  var resumCapitols = d.map(function(cap) {
+    var words    = (cap.text || '').trim().split(/\s+/).filter(function(w) { return w; });
+    var primer200 = words.slice(0, 200).join(' ');
+    var ultim200  = words.length > 400 ? '\n[…]\n' + words.slice(-200).join(' ') : '';
+    return '=== CAPÍTOL ' + cap.num + ' (' + words.length + ' paraules) ===\n' + primer200 + ultim200;
+  }).join('\n\n');
+
+  var subtramesRef = subtrames && subtrames.length > 0
+    ? '\n\nSUBTRAMES ACTIVES:\n' + subtrames.map(function(s, i) { return (i + 1) + '. ' + s.substring(0, 120); }).join('\n')
+    : '';
+
+  var systemLector =
+    'Ets un lector beta professional. No busques errors factuals — busques AVORRIMENT. ' +
+    'La teva feina és identificar on un lector real deixaria el llibre a la tauleta de nit i no el tornaria a agafar. ' +
+    'Respon exclusivament en català.';
+
+  var msgs = [{
+    role: 'user',
+    content:
+      '=== BÍBLIA (resum) ===\n' + (biblia || '').substring(0, 800) + subtramesRef + '\n\n' +
+      resumCapitols + '\n\n---\n' +
+      'Analitza l\'EXPERIÈNCIA DE LECTURA d\'aquests ' + d.length + ' capítols. Identifica:\n\n' +
+      '1. CAIGUDES DE RITME: capítols o seccions on el ritme cau i el lector s\'avorriria.\n' +
+      '2. CAPÍTOLS PRESCINDIBLES: capítols que es podrien saltar sense perdre trama.\n' +
+      '3. EMPATIA FEBLE: moments on el protagonista no té res en joc.\n' +
+      '4. SUBTRAMES ESTANCADES: subtrames obertes que no avancen des de fa 2+ capítols.\n' +
+      '5. GANXOS FEBLES: finals de capítol que no creen necessitat de continuar llegint.\n\n' +
+      'Per cada problema detectat, proposa una INSTRUCCIÓ DE MILLORA CONCRETA.\n\n' +
+      'Format ESTRICTE:\n' +
+      'TIPUS: [RITME/PRESCINDIBLE/EMPATIA/SUBTRAMA/GANXO]\n' +
+      'CAPÍTOL: [N]\n' +
+      'DIAGNÒSTIC: [què passa i per què és un problema]\n' +
+      'MILLORA: [instrucció directa i accionable]\n\n' +
+      'Si no trobes cap problema real, escriu: "LECTURA_FLUIDA"\n' +
+      'Màxim 5 problemes. Prioritza els més greus.'
+  }];
+
+  var resposta = callLLM(msgs, systemLector, Object.assign({}, userConfig, { maxTokens: 2500 }));
+  return { response: resposta || 'LECTURA_FLUIDA' };
+}
+
+// ─── Auditar la resolució dels últims 3 capítols ─────────────
+// Verifica: subtrames resoltes, arc protagonista complet,
+// clímax creïble, clausura coherent amb el perfil d'autor.
+function auditarResolucio(capitolsFinals, primerCapitol, subtrames, biblia, tematica, userConfig) {
+  var caps = capitolsFinals || [];
+  if (caps.length < 2) return { response: 'RESOLUCIO_OK' };
+
+  var resumFinals = caps.map(function(cap) {
+    var words = (cap.text || '').trim().split(/\s+/);
+    return '=== CAPÍTOL ' + cap.num + ' ===\n' + words.slice(0, 300).join(' ') +
+      (words.length > 600 ? '\n[…]\n' + words.slice(-300).join(' ') : '');
+  }).join('\n\n');
+
+  var resumPrimer = '';
+  if (primerCapitol && primerCapitol.trim()) {
+    var wordsPrimer = primerCapitol.trim().split(/\s+/);
+    resumPrimer = '\n\n=== CAPÍTOL 1 (per comparar arc protagonista) ===\n' + wordsPrimer.slice(0, 250).join(' ');
+  }
+
+  var subtramesRef = subtrames && subtrames.length > 0
+    ? '\n\nSUBTRAMES QUE HAN DE TENIR RESOLUCIÓ:\n' + subtrames.map(function(s, i) { return (i + 1) + '. ' + s.substring(0, 130); }).join('\n')
+    : '';
+
+  var perfil = typeof getPerfilAutor === 'function' ? getPerfilAutor(tematica) : null;
+  var reglesClausura = '';
+  if (perfil && perfil.clausura) {
+    reglesClausura = '\n\nREGLES DE CLAUSURA PER A ' + perfil.nom.toUpperCase() + ':\n' +
+      'Tipus: ' + perfil.clausura.tipus + '\n' +
+      perfil.clausura.instruccio + '\n' +
+      'Última frase: ' + perfil.clausura.ultimaFrase + '\n' +
+      perfil.clausura.prohibicions;
+  }
+
+  var msgs = [{
+    role: 'user',
+    content:
+      '=== BÍBLIA ===\n' + (biblia || '').substring(0, 1000) + resumPrimer + subtramesRef + reglesClausura +
+      '\n\n=== ÚLTIMS CAPÍTOLS ===\n' + resumFinals + '\n\n---\n' +
+      'Avalua la RESOLUCIÓ de la novel·la. Verifica:\n\n' +
+      '1. SUBTRAMES: Totes les subtrames llistades tenen resolució explícita o implícita?\n' +
+      '2. ARC PROTAGONISTA: El protagonista del capítol 1 ha canviat de manera creïble al final?\n' +
+      '3. CLÍMAX: El penúltim capítol és el moment de màxima intensitat emocional?\n' +
+      '4. CLAUSURA: El final compleix les regles de clausura de l\'autor?\n' +
+      '5. ÚLTIMA FRASE: L\'última frase de la novel·la és memorable i ressonant?\n\n' +
+      'Si tot és correcte: respon NOMÉS "RESOLUCIO_OK"\n' +
+      'Si hi ha problemes:\n' +
+      'PROBLEMA: [descripció]\n' +
+      'CAPÍTOL: [N]\n' +
+      'MILLORA: [instrucció concreta]\n\n' +
+      'Màxim 3 problemes. Prioritza els que arruïnen l\'experiència final.'
+  }];
+
+  var system = getSystemPrompt(tematica) +
+    '\nEts un editor especialitzat en finals de novel·la. Un mal final destrueix tota l\'experiència. La teva feina és assegurar que no passi.';
+
+  var resposta = callLLM(msgs, system, Object.assign({}, userConfig, { maxTokens: 2000 }));
+  return { response: resposta || 'RESOLUCIO_OK' };
+}
+
 // ─── FASE 14: Escriure un capítol (patró anti-timeout, 2 parts) ──
 // partNum:       1 (primera meitat) o 2 (segona meitat)
 // historialPart: null per Part 1; historial retornat per Part 1 per a Part 2
 // informeEstil:  (opcional) tics estilístics detectats per fase15_informeEstil
-function escriureCapitol(partNum, numCapitol, totalCapitols, biblia, outlineCapitol, textCapAnterior, estilDesc, userConfig, tematica, historialPart, fetsCanonicsText, estatJson, informeEstil) {
+function escriureCapitol(partNum, numCapitol, totalCapitols, biblia, outlineCapitol, textCapAnterior, estilDesc, userConfig, tematica, historialPart, fetsCanonicsText, estatJson, informeEstil, ambientacio) {
   var capitolsRestants = Math.max(0, (totalCapitols || 0) - (numCapitol || 0));
+  var contextAmbientacio = construirContextAmbientacio(ambientacio, tematica);
   var systemForCap = getSystemPrompt(tematica) +
+    (contextAmbientacio ? '\n' + contextAmbientacio : '') +
     '\n\n=== BÍBLIA DE LA NOVEL·LA ===\n' + (biblia || '');
 
   var perfil = getPerfilAutor(tematica);
